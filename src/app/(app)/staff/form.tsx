@@ -16,6 +16,8 @@ import {
   type StaffRole,
 } from '@/features/staff/repository';
 import { isValidIranianMobile, isValidNationalCode, normalizeMobile, toEnglishDigits } from '@/lib/persian';
+import { useAuth } from '@/features/auth/useAuth';
+import { EmptyState } from '@/design/components/StateViews';
 
 const ROLES: StaffRole[] = ['doctor', 'secretary', 'assistant', 'manager'];
 const MODELS: CommissionModel[] = ['none', 'fixed_50', 'percentage', 'advanced'];
@@ -53,6 +55,8 @@ function Chips<T extends string>({
 
 export default function StaffFormScreen() {
   const router = useRouter();
+  const { session } = useAuth();
+  const isManager = session?.role === 'manager';
   const { id } = useLocalSearchParams<{ id?: string }>();
   const existing = useMemo(() => (id ? getStaff(id) : undefined), [id]);
 
@@ -81,6 +85,7 @@ export default function StaffFormScreen() {
 
     let percent: number | null = null;
     if (isDoctor && commissionModel === 'percentage') {
+      if (!commissionPercent.trim()) return setError('درصد سهم الزامی است.');
       const p = Number(toEnglishDigits(commissionPercent));
       if (!Number.isFinite(p) || p < 0 || p > 100)
         return setError('درصد سهم باید بین ۰ تا ۱۰۰ باشد.');
@@ -102,6 +107,18 @@ export default function StaffFormScreen() {
     else createStaff(payload);
     router.back();
   };
+
+  if (!isManager) {
+    return (
+      <Screen>
+        <Stack.Screen options={{ headerShown: false }} />
+        <EmptyState message="فقط مدیر می‌تواند کادر درمان را اضافه یا ویرایش کند." />
+        <View style={styles.guard}>
+          <Button title="بازگشت" kind="secondary" onPress={() => router.back()} />
+        </View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
@@ -184,6 +201,7 @@ export default function StaffFormScreen() {
 
 const styles = StyleSheet.create({
   header: { gap: spacing.xs, marginBottom: spacing.md },
+  guard: { padding: spacing.lg },
   form: { gap: spacing.lg, paddingBottom: spacing.xl },
   label: { textAlign: 'right', marginBottom: spacing.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
