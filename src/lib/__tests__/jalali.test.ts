@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import { formatJalali, jalaliWeekday } from '../jalali';
 
 describe('jalali formatting', () => {
