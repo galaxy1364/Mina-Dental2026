@@ -12,7 +12,7 @@ import { Text } from '@/design/components/Text';
 import { spacing } from '@/design/tokens';
 import { db } from '@/core/db/client';
 import { appBootAudit, localMeta } from '@/core/db/schema';
-import { getSyncSnapshot, processQueue } from '@/core/sync/syncEngine';
+import { getSyncSnapshot, processQueue, retryFailed } from '@/core/sync/syncEngine';
 import { computeClinicDashboard, type ClinicDashboard } from '@/features/journey/engine';
 import { useAuth } from '@/features/auth/useAuth';
 import { formatJalaliDateTime, nowIso } from '@/lib/jalali';
@@ -24,6 +24,7 @@ interface Health {
   pending: number;
   online: boolean;
   configured: boolean;
+  failed: number;
 }
 
 function readHealth(): Health {
@@ -36,6 +37,7 @@ function readHealth(): Health {
     pending: snap.pending,
     online: snap.online,
     configured: snap.configured,
+    failed: snap.failed,
   };
 }
 
@@ -141,6 +143,11 @@ export default function Dashboard() {
               label={health.pending > 0 ? `${toPersianDigits(health.pending)} در انتظار` : 'همگام'}
             />
           </Row>
+          {health.failed > 0 ? (
+            <Row label="ناموفق (نیازمند تلاش مجدد)">
+              <StatusBadge tone="conflict" label={`${toPersianDigits(health.failed)} رکورد`} />
+            </Row>
+          ) : null}
           <Row label="سرویس ابری">
             <StatusBadge
               tone={health.configured ? 'synced' : 'offline'}
@@ -156,6 +163,9 @@ export default function Dashboard() {
 
         <View style={styles.actions}>
           <Button title="همگام‌سازی دستی" kind="secondary" onPress={() => void processQueue().then(refresh)} />
+          {health.failed > 0 ? (
+            <Button title="تلاش مجدد رکوردهای ناموفق" kind="secondary" onPress={() => void retryFailed().then(refresh)} />
+          ) : null}
           <Button title="خروج از حساب" kind="ghost" onPress={() => void signOut()} />
         </View>
       </ScrollView>
