@@ -14,11 +14,15 @@ import {
   type LabType,
 } from '@/features/labs/repository';
 import { normalizeMobile } from '@/lib/persian';
+import { useAuth } from '@/features/auth/useAuth';
+import { EmptyState } from '@/design/components/StateViews';
 
 const TYPES: LabType[] = ['fixed', 'removable'];
 
 export default function LabFormScreen() {
   const router = useRouter();
+  const { session } = useAuth();
+  const isManager = session?.role === 'manager';
   const { id } = useLocalSearchParams<{ id?: string }>();
   const existing = useMemo(() => (id ? getLab(id) : undefined), [id]);
 
@@ -49,6 +53,18 @@ export default function LabFormScreen() {
     else createLab(payload);
     router.back();
   };
+
+  if (!isManager) {
+    return (
+      <Screen>
+        <Stack.Screen options={{ headerShown: false }} />
+        <EmptyState message="فقط مدیر می‌تواند لابراتوار را اضافه یا ویرایش کند." />
+        <View style={styles.guard}>
+          <Button title="بازگشت" kind="secondary" onPress={() => router.back()} />
+        </View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
@@ -114,6 +130,7 @@ export default function LabFormScreen() {
 
 const styles = StyleSheet.create({
   header: { gap: spacing.xs, marginBottom: spacing.md },
+  guard: { padding: spacing.lg },
   form: { gap: spacing.lg, paddingBottom: spacing.xl },
   label: { textAlign: 'right', marginBottom: spacing.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

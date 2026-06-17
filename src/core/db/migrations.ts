@@ -173,6 +173,20 @@ const LAB_SEED: LabSeed[] = [
  * inserted when no active record with the same identity already exists, so it
  * never duplicates or overwrites edits the user has made.
  */
+/** Appends a cloud-sync outbox entry so seeded rows reach the cloud like any other write. */
+function enqueueSeed(
+  db: ReturnType<typeof getDb>,
+  entityType: string,
+  entityId: string,
+  payload: Record<string, unknown>,
+): void {
+  db.runSync(
+    `INSERT INTO sync_queue (id, entity_type, entity_id, op, payload, status, attempts)
+     VALUES (?, ?, ?, 'insert', ?, 'pending', 0)`,
+    [newId(), entityType, entityId, JSON.stringify(payload)],
+  );
+}
+
 function seedClinicData(db: ReturnType<typeof getDb>): void {
   for (const s of STAFF_SEED) {
     const exists = db.getFirstSync<{ id: string }>(
@@ -180,11 +194,18 @@ function seedClinicData(db: ReturnType<typeof getDb>): void {
       [CLINIC.id, s.fullName],
     );
     if (exists) continue;
+    const id = newId();
     db.runSync(
       `INSERT INTO staff_local (id, clinic_id, full_name, role, search_norm, sync_status)
        VALUES (?, ?, ?, ?, ?, 'pending')`,
-      [newId(), CLINIC.id, s.fullName, s.role, normalizePersian(s.fullName)],
+      [id, CLINIC.id, s.fullName, s.role, normalizePersian(s.fullName)],
     );
+    enqueueSeed(db, 'staff', id, {
+      id,
+      clinic_id: CLINIC.id,
+      full_name: s.fullName,
+      role: s.role,
+    });
   }
   for (const l of LAB_SEED) {
     const exists = db.getFirstSync<{ id: string }>(
@@ -192,11 +213,18 @@ function seedClinicData(db: ReturnType<typeof getDb>): void {
       [CLINIC.id, l.name],
     );
     if (exists) continue;
+    const id = newId();
     db.runSync(
       `INSERT INTO labs_local (id, clinic_id, name, type, search_norm, sync_status)
        VALUES (?, ?, ?, ?, ?, 'pending')`,
-      [newId(), CLINIC.id, l.name, l.type, normalizePersian(l.name)],
+      [id, CLINIC.id, l.name, l.type, normalizePersian(l.name)],
     );
+    enqueueSeed(db, 'lab', id, {
+      id,
+      clinic_id: CLINIC.id,
+      name: l.name,
+      type: l.type,
+    });
   }
 }
 
