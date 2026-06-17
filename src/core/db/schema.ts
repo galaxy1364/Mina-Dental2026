@@ -131,6 +131,66 @@ export const appointmentsLocal = sqliteTable(
   }),
 );
 
+/** Staff: doctors, secretaries, assistants and the manager. `auth_user_id` links to Supabase Auth. */
+export const staffLocal = sqliteTable(
+  'staff_local',
+  {
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id').notNull(),
+    authUserId: text('auth_user_id'),
+    fullName: text('full_name').notNull(),
+    role: text('role', { enum: ['manager', 'doctor', 'secretary', 'assistant'] }).notNull(),
+    mobile: text('mobile'),
+    nationalCode: text('national_code'),
+    commissionModel: text('commission_model', {
+      enum: ['none', 'fixed_50', 'percentage', 'advanced'],
+    })
+      .notNull()
+      .default('none'),
+    commissionPercent: integer('commission_percent'),
+    active: integer('active', { mode: 'boolean' }).notNull().default(true),
+    notes: text('notes'),
+    searchNorm: text('search_norm'),
+    createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
+    updatedAt: text('updated_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
+    deletedAt: text('deleted_at'),
+    syncStatus: text('sync_status', { enum: ['pending', 'synced', 'conflict'] })
+      .notNull()
+      .default('pending'),
+  },
+  (t) => ({
+    roleIdx: index('idx_staff_role').on(t.clinicId, t.role),
+    searchIdx: index('idx_staff_search').on(t.searchNorm),
+  }),
+);
+
+/** Dental labs — fixed (ثابت) or removable (متحرک). */
+export const labsLocal = sqliteTable(
+  'labs_local',
+  {
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id').notNull(),
+    name: text('name').notNull(),
+    type: text('type', { enum: ['fixed', 'removable'] }).notNull(),
+    phone: text('phone'),
+    address: text('address'),
+    contactPerson: text('contact_person'),
+    active: integer('active', { mode: 'boolean' }).notNull().default(true),
+    notes: text('notes'),
+    searchNorm: text('search_norm'),
+    createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
+    updatedAt: text('updated_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
+    deletedAt: text('deleted_at'),
+    syncStatus: text('sync_status', { enum: ['pending', 'synced', 'conflict'] })
+      .notNull()
+      .default('pending'),
+  },
+  (t) => ({
+    typeIdx: index('idx_labs_type').on(t.clinicId, t.type),
+    searchIdx: index('idx_labs_search').on(t.searchNorm),
+  }),
+);
+
 export const schema = {
   localMeta,
   syncQueue,
@@ -140,4 +200,6 @@ export const schema = {
   featureFlags,
   patientsLocal,
   appointmentsLocal,
+  staffLocal,
+  labsLocal,
 };

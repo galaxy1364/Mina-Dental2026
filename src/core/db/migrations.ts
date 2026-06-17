@@ -1,9 +1,12 @@
 import { getDb } from './sqlite';
+import { CLINIC } from '../clinic';
+import { newId } from '../ids';
 import { createLogger } from '../logger/logger';
+import { normalizePersian } from '@/lib/persian';
 
 const log = createLogger('migrations');
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /**
  * Idempotent bootstrap of the local schema. Uses CREATE TABLE IF NOT EXISTS so it
@@ -102,11 +105,105 @@ CREATE TABLE IF NOT EXISTS appointments_local (
 CREATE INDEX IF NOT EXISTS idx_appts_start ON appointments_local(clinic_id, start_time);
 CREATE INDEX IF NOT EXISTS idx_appts_doctor ON appointments_local(doctor_id, start_time);
 CREATE INDEX IF NOT EXISTS idx_appts_patient ON appointments_local(patient_id, start_time);
+
+CREATE TABLE IF NOT EXISTS staff_local (
+  id TEXT PRIMARY KEY,
+  clinic_id TEXT NOT NULL,
+  auth_user_id TEXT,
+  full_name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK(role IN ('manager','doctor','secretary','assistant')),
+  mobile TEXT,
+  national_code TEXT,
+  commission_model TEXT NOT NULL DEFAULT 'none' CHECK(commission_model IN ('none','fixed_50','percentage','advanced')),
+  commission_percent INTEGER,
+  active INTEGER NOT NULL DEFAULT 1,
+  notes TEXT,
+  search_norm TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  deleted_at TEXT,
+  sync_status TEXT NOT NULL DEFAULT 'pending' CHECK(sync_status IN ('pending','synced','conflict'))
+);
+CREATE INDEX IF NOT EXISTS idx_staff_role ON staff_local(clinic_id, role);
+CREATE INDEX IF NOT EXISTS idx_staff_search ON staff_local(search_norm);
+
+CREATE TABLE IF NOT EXISTS labs_local (
+  id TEXT PRIMARY KEY,
+  clinic_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL CHECK(type IN ('fixed','removable')),
+  phone TEXT,
+  address TEXT,
+  contact_person TEXT,
+  active INTEGER NOT NULL DEFAULT 1,
+  notes TEXT,
+  search_norm TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  deleted_at TEXT,
+  sync_status TEXT NOT NULL DEFAULT 'pending' CHECK(sync_status IN ('pending','synced','conflict'))
+);
+CREATE INDEX IF NOT EXISTS idx_labs_type ON labs_local(clinic_id, type);
+CREATE INDEX IF NOT EXISTS idx_labs_search ON labs_local(search_norm);
 `;
+
+interface StaffSeed {
+  fullName: string;
+  role: 'manager' | 'doctor' | 'secretary' | 'assistant';
+}
+const STAFF_SEED: StaffSeed[] = [
+  { fullName: 'دکتر مهدی', role: 'manager' },
+  { fullName: 'دکتر مینا مازندرانی', role: 'doctor' },
+  { fullName: 'دکتر ابوالفضل فراهانی', role: 'doctor' },
+  { fullName: 'دکتر علی یازرلو', role: 'doctor' },
+  { fullName: 'اکرم عیدی', role: 'assistant' },
+];
+
+interface LabSeed {
+  name: string;
+  type: 'fixed' | 'removable';
+}
+const LAB_SEED: LabSeed[] = [
+  { name: 'ناژداکی', type: 'fixed' },
+  { name: 'هژبری', type: 'removable' },
+];
+
+/**
+ * Seeds the clinic's known staff and labs once. Idempotent: each row is only
+ * inserted when no active record with the same identity already exists, so it
+ * never duplicates or overwrites edits the user has made.
+ */
+function seedClinicData(db: ReturnType<typeof getDb>): void {
+  for (const s of STAFF_SEED) {
+    const exists = db.getFirstSync<{ id: string }>(
+      `SELECT id FROM staff_local WHERE clinic_id = ? AND full_name = ? AND deleted_at IS NULL LIMIT 1`,
+      [CLINIC.id, s.fullName],
+    );
+    if (exists) continue;
+    db.runSync(
+      `INSERT INTO staff_local (id, clinic_id, full_name, role, search_norm, sync_status)
+       VALUES (?, ?, ?, ?, ?, 'pending')`,
+      [newId(), CLINIC.id, s.fullName, s.role, normalizePersian(s.fullName)],
+    );
+  }
+  for (const l of LAB_SEED) {
+    const exists = db.getFirstSync<{ id: string }>(
+      `SELECT id FROM labs_local WHERE clinic_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1`,
+      [CLINIC.id, l.name],
+    );
+    if (exists) continue;
+    db.runSync(
+      `INSERT INTO labs_local (id, clinic_id, name, type, search_norm, sync_status)
+       VALUES (?, ?, ?, ?, ?, 'pending')`,
+      [newId(), CLINIC.id, l.name, l.type, normalizePersian(l.name)],
+    );
+  }
+}
 
 export function runMigrations(): void {
   const db = getDb();
   db.execSync(DDL);
+  seedClinicData(db);
   db.runSync(
     `INSERT INTO local_meta (key, value, updated_at) VALUES ('schema_version', ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,

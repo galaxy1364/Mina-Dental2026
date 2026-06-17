@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { eq, sql } from 'drizzle-orm';
 import { Button } from '@/design/components/Button';
 import { Card } from '@/design/components/Card';
@@ -37,7 +38,9 @@ function readHealth(): Health {
 }
 
 export default function Dashboard() {
+  const router = useRouter();
   const { session, signOut } = useAuth();
+  const isManager = session?.role === 'manager';
   const [health, setHealth] = useState<Health>(() => readHealth());
   const [now] = useState(() => nowIso());
 
@@ -106,6 +109,33 @@ export default function Dashboard() {
           </View>
         </Card>
 
+        <Card>
+          <Text variant="subtitle">مدیریت</Text>
+          <View style={styles.menu}>
+            <Pressable style={styles.menuItem} onPress={() => router.push('/(app)/staff')}>
+              <Text variant="body" tone="primary">
+                کادر درمان و پرسنل
+              </Text>
+              <Text variant="caption" tone="muted">
+                ‹
+              </Text>
+            </Pressable>
+            <Pressable style={styles.menuItem} onPress={() => router.push('/(app)/labs')}>
+              <Text variant="body" tone="primary">
+                لابراتوارها
+              </Text>
+              <Text variant="caption" tone="muted">
+                ‹
+              </Text>
+            </Pressable>
+          </View>
+          {!isManager ? (
+            <Text variant="caption" tone="muted">
+              فقط مدیر می‌تواند افزودن/ویرایش/حذف انجام دهد.
+            </Text>
+          ) : null}
+        </Card>
+
         <View style={styles.actions}>
           <Button title="همگام‌سازی دستی" kind="secondary" onPress={() => void processQueue().then(refresh)} />
           <Button title="خروج از حساب" kind="ghost" onPress={() => void signOut()} />
@@ -126,4 +156,13 @@ const styles = StyleSheet.create({
   },
   badgeRow: { marginTop: spacing.sm, flexDirection: 'row' },
   actions: { gap: spacing.md, marginTop: spacing.sm },
+  menu: { marginTop: spacing.sm },
+  menuItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
+  },
 });
