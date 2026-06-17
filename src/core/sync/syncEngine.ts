@@ -20,6 +20,8 @@ const log = createLogger('syncEngine');
 const TABLE_MAP: Record<string, string> = {
   patient: 'patients',
   appointment: 'appointments',
+  staff: 'staff',
+  lab: 'labs',
 };
 
 type SyncRow = ReturnType<typeof nextBatch>[number];
