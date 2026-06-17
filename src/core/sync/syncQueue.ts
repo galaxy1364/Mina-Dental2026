@@ -80,3 +80,27 @@ export function markFailed(id: string, attempts: number, error: string): void {
 export function deadLetters() {
   return db.select().from(syncQueue).where(eq(syncQueue.status, 'dead_letter')).all();
 }
+
+export function deadLetterCount(): number {
+  const row = db
+    .select({ c: sql<number>`count(*)` })
+    .from(syncQueue)
+    .where(eq(syncQueue.status, 'dead_letter'))
+    .get();
+  return row?.c ?? 0;
+}
+
+/**
+ * Revive dead-lettered entries so they are retried. Used when the cause of the
+ * failure is resolved externally (e.g. cloud tables provisioned after the rows
+ * were first queued). Nothing is ever dropped — this only resets state.
+ */
+export function requeueDeadLetters(): number {
+  const revived = deadLetterCount();
+  if (revived === 0) return 0;
+  db.update(syncQueue)
+    .set({ status: 'pending', attempts: 0, updatedAt: nowIso() })
+    .where(eq(syncQueue.status, 'dead_letter'))
+    .run();
+  return revived;
+}

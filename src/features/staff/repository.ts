@@ -67,6 +67,16 @@ export function getStaff(id: string): Staff | undefined {
   return db.select().from(staffLocal).where(eq(staffLocal.id, id)).get();
 }
 
+/** Treating providers (doctors + the manager, who also treats) for assignment pickers. */
+export function listDoctors(): Staff[] {
+  return listStaff().filter((s) => s.role === 'doctor' || s.role === 'manager');
+}
+
+export function staffName(id: string | null | undefined): string | null {
+  if (!id) return null;
+  return getStaff(id)?.fullName ?? null;
+}
+
 export function createStaff(input: StaffInput): Staff {
   const id = newId();
   const now = nowIso();

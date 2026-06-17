@@ -7,11 +7,13 @@ import NetInfo, { type NetInfoState } from '@react-native-community/netinfo';
 import { getSupabase, isCloudConfigured } from '../supabase/client';
 import { createLogger } from '../logger/logger';
 import {
+  deadLetterCount,
   markFailed,
   markInFlight,
   markSynced,
   nextBatch,
   pendingCount,
+  requeueDeadLetters,
 } from './syncQueue';
 
 const log = createLogger('syncEngine');
@@ -22,6 +24,9 @@ const TABLE_MAP: Record<string, string> = {
   appointment: 'appointments',
   staff: 'staff',
   lab: 'labs',
+  lab_case: 'lab_cases',
+  payment: 'payments',
+  implant: 'implants',
 };
 
 type SyncRow = ReturnType<typeof nextBatch>[number];
@@ -31,7 +36,33 @@ let running = false;
 let online = false;
 
 export function getSyncSnapshot() {
-  return { online, pending: safePending(), configured: isCloudConfigured() };
+  return {
+    online,
+    pending: safePending(),
+    configured: isCloudConfigured(),
+    failed: safeDeadLetters(),
+  };
+}
+
+function safeDeadLetters(): number {
+  try {
+    return deadLetterCount();
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Manually revive dead-lettered rows and drain the queue. Surfaced as a
+ * "retry failed" affordance so nothing is ever permanently stuck.
+ */
+export async function retryFailed(): Promise<{ pushed: number; failed: number }> {
+  try {
+    requeueDeadLetters();
+  } catch {
+    // ignore — best effort
+  }
+  return processQueue();
 }
 
 function safePending(): number {
@@ -99,7 +130,13 @@ function onNetChange(state: NetInfoState) {
   const becameOnline = !online && next;
   online = next;
   if (becameOnline) {
-    log.info('Connectivity restored — draining queue');
+    log.info('Connectivity restored — reviving failed entries and draining queue');
+    try {
+      const revived = requeueDeadLetters();
+      if (revived) log.info('Revived dead-lettered entries', { revived });
+    } catch {
+      // ignore — best effort
+    }
     void processQueue();
   }
 }
