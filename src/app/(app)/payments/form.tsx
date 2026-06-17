@@ -37,6 +37,7 @@ export default function PaymentFormScreen() {
   const [method, setMethod] = useState<PaymentMethod>(existing?.method ?? 'cash');
   const [doctorId, setDoctorId] = useState<string | null>(existing?.doctorId ?? null);
   const [date, setDate] = useState(existing ? isoToJalaliDate(existing.paidAt) : todayJalali());
+  const [time] = useState(existing ? isoToTime(existing.paidAt) : isoToTime(nowIso()));
   const [description, setDescription] = useState(existing?.description ?? '');
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +47,7 @@ export default function PaymentFormScreen() {
     setError(null);
     if (!patientId) return setError('انتخاب بیمار الزامی است.');
     if (amountNum <= 0) return setError('مبلغ باید بزرگ‌تر از صفر باشد.');
-    const paidAt = parseJalaliToIso(date, isoToTime(nowIso()));
+    const paidAt = parseJalaliToIso(date, time);
     if (!paidAt) return setError('تاریخ معتبر نیست.');
 
     const payload = {

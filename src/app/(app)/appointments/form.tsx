@@ -19,6 +19,7 @@ import {
 } from '@/features/appointments/repository';
 import { isoToJalaliDate, isoToTime, parseJalaliToIso, todayJalali } from '@/lib/jalali';
 import { toEnglishDigits } from '@/lib/persian';
+import { CLINIC } from '@/core/clinic';
 
 export default function AppointmentFormScreen() {
   const router = useRouter();
@@ -44,10 +45,16 @@ export default function AppointmentFormScreen() {
     if (!patientId) return setError('انتخاب بیمار الزامی است.');
     const startIso = parseJalaliToIso(date, start);
     if (!startIso) return setError('تاریخ یا ساعت معتبر نیست. نمونه: ۱۴۰۴/۰۳/۲۷ و ۰۹:۰۰');
-    const hour = new Date(startIso).getHours();
-    if (hour < 8) return setError('ساعت کاری کلینیک از ۸ صبح است.');
+    const { startHour, endHour } = CLINIC.workingHours;
+    const startDate = new Date(startIso);
+    if (startDate.getHours() < startHour)
+      return setError(`ساعت کاری کلینیک از ${startHour} شروع می‌شود.`);
     const dur = Number(toEnglishDigits(duration)) || 30;
-    const endIso = new Date(new Date(startIso).getTime() + dur * 60000).toISOString();
+    const endDate = new Date(startDate.getTime() + dur * 60000);
+    const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
+    if (startMinutes + dur > endHour * 60)
+      return setError('پایان نوبت از ساعت کاری کلینیک می‌گذرد.');
+    const endIso = endDate.toISOString();
 
     const payload = {
       patientId,
