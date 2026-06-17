@@ -191,6 +191,97 @@ export const labsLocal = sqliteTable(
   }),
 );
 
+/** Lab work orders (سفارش لابراتوار) — links a patient to a lab with a status timeline. */
+export const labCasesLocal = sqliteTable(
+  'lab_cases_local',
+  {
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id').notNull(),
+    patientId: text('patient_id').notNull(),
+    labId: text('lab_id').notNull(),
+    doctorId: text('doctor_id'),
+    title: text('title').notNull(),
+    toothNumbers: text('tooth_numbers'),
+    status: text('status', {
+      enum: ['ordered', 'in_lab', 'ready', 'delivered', 'returned', 'cancelled'],
+    })
+      .notNull()
+      .default('ordered'),
+    sentAt: text('sent_at'),
+    dueAt: text('due_at'),
+    deliveredAt: text('delivered_at'),
+    price: integer('price'),
+    notes: text('notes'),
+    searchNorm: text('search_norm'),
+    createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
+    updatedAt: text('updated_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
+    deletedAt: text('deleted_at'),
+    syncStatus: text('sync_status', { enum: ['pending', 'synced', 'conflict'] })
+      .notNull()
+      .default('pending'),
+  },
+  (t) => ({
+    patientIdx: index('idx_lab_cases_patient').on(t.patientId, t.createdAt),
+    labIdx: index('idx_lab_cases_lab').on(t.labId, t.status),
+    statusIdx: index('idx_lab_cases_status').on(t.clinicId, t.status),
+  }),
+);
+
+/** Financial ledger (مالی): `charge` increases a patient's balance, `payment` reduces it. */
+export const paymentsLocal = sqliteTable(
+  'payments_local',
+  {
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id').notNull(),
+    patientId: text('patient_id').notNull(),
+    doctorId: text('doctor_id'),
+    direction: text('direction', { enum: ['charge', 'payment'] }).notNull(),
+    amount: integer('amount').notNull(),
+    method: text('method', { enum: ['cash', 'card', 'transfer', 'other'] }),
+    description: text('description'),
+    paidAt: text('paid_at').notNull(),
+    createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
+    updatedAt: text('updated_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
+    deletedAt: text('deleted_at'),
+    syncStatus: text('sync_status', { enum: ['pending', 'synced', 'conflict'] })
+      .notNull()
+      .default('pending'),
+  },
+  (t) => ({
+    patientIdx: index('idx_payments_patient').on(t.patientId, t.paidAt),
+    dateIdx: index('idx_payments_date').on(t.clinicId, t.paidAt),
+  }),
+);
+
+/** Implant registry (ایمپلنت) — per patient placement records. */
+export const implantsLocal = sqliteTable(
+  'implants_local',
+  {
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id').notNull(),
+    patientId: text('patient_id').notNull(),
+    doctorId: text('doctor_id'),
+    brand: text('brand').notNull(),
+    system: text('system'),
+    toothNumber: text('tooth_number'),
+    fixtureDiameter: text('fixture_diameter'),
+    fixtureLength: text('fixture_length'),
+    placedAt: text('placed_at'),
+    notes: text('notes'),
+    searchNorm: text('search_norm'),
+    createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
+    updatedAt: text('updated_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
+    deletedAt: text('deleted_at'),
+    syncStatus: text('sync_status', { enum: ['pending', 'synced', 'conflict'] })
+      .notNull()
+      .default('pending'),
+  },
+  (t) => ({
+    patientIdx: index('idx_implants_patient').on(t.patientId, t.placedAt),
+    brandIdx: index('idx_implants_brand').on(t.clinicId, t.brand),
+  }),
+);
+
 export const schema = {
   localMeta,
   syncQueue,
@@ -202,4 +293,7 @@ export const schema = {
   appointmentsLocal,
   staffLocal,
   labsLocal,
+  labCasesLocal,
+  paymentsLocal,
+  implantsLocal,
 };

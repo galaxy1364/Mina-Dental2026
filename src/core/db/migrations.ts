@@ -6,7 +6,7 @@ import { normalizePersian } from '@/lib/persian';
 
 const log = createLogger('migrations');
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
  * Idempotent bootstrap of the local schema. Uses CREATE TABLE IF NOT EXISTS so it
@@ -145,6 +145,70 @@ CREATE TABLE IF NOT EXISTS labs_local (
 );
 CREATE INDEX IF NOT EXISTS idx_labs_type ON labs_local(clinic_id, type);
 CREATE INDEX IF NOT EXISTS idx_labs_search ON labs_local(search_norm);
+
+CREATE TABLE IF NOT EXISTS lab_cases_local (
+  id TEXT PRIMARY KEY,
+  clinic_id TEXT NOT NULL,
+  patient_id TEXT NOT NULL,
+  lab_id TEXT NOT NULL,
+  doctor_id TEXT,
+  title TEXT NOT NULL,
+  tooth_numbers TEXT,
+  status TEXT NOT NULL DEFAULT 'ordered'
+    CHECK(status IN ('ordered','in_lab','ready','delivered','returned','cancelled')),
+  sent_at TEXT,
+  due_at TEXT,
+  delivered_at TEXT,
+  price INTEGER,
+  notes TEXT,
+  search_norm TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  deleted_at TEXT,
+  sync_status TEXT NOT NULL DEFAULT 'pending' CHECK(sync_status IN ('pending','synced','conflict'))
+);
+CREATE INDEX IF NOT EXISTS idx_lab_cases_patient ON lab_cases_local(patient_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_lab_cases_lab ON lab_cases_local(lab_id, status);
+CREATE INDEX IF NOT EXISTS idx_lab_cases_status ON lab_cases_local(clinic_id, status);
+
+CREATE TABLE IF NOT EXISTS payments_local (
+  id TEXT PRIMARY KEY,
+  clinic_id TEXT NOT NULL,
+  patient_id TEXT NOT NULL,
+  doctor_id TEXT,
+  direction TEXT NOT NULL CHECK(direction IN ('charge','payment')),
+  amount INTEGER NOT NULL,
+  method TEXT CHECK(method IN ('cash','card','transfer','other')),
+  description TEXT,
+  paid_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  deleted_at TEXT,
+  sync_status TEXT NOT NULL DEFAULT 'pending' CHECK(sync_status IN ('pending','synced','conflict'))
+);
+CREATE INDEX IF NOT EXISTS idx_payments_patient ON payments_local(patient_id, paid_at);
+CREATE INDEX IF NOT EXISTS idx_payments_date ON payments_local(clinic_id, paid_at);
+
+CREATE TABLE IF NOT EXISTS implants_local (
+  id TEXT PRIMARY KEY,
+  clinic_id TEXT NOT NULL,
+  patient_id TEXT NOT NULL,
+  doctor_id TEXT,
+  brand TEXT NOT NULL,
+  system TEXT,
+  tooth_number TEXT,
+  fixture_diameter TEXT,
+  fixture_length TEXT,
+  placed_at TEXT,
+  notes TEXT,
+  search_norm TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  deleted_at TEXT,
+  sync_status TEXT NOT NULL DEFAULT 'pending' CHECK(sync_status IN ('pending','synced','conflict'))
+);
+CREATE INDEX IF NOT EXISTS idx_implants_patient ON implants_local(patient_id, placed_at);
+CREATE INDEX IF NOT EXISTS idx_implants_brand ON implants_local(clinic_id, brand);
 `;
 
 interface StaffSeed {

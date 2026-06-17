@@ -22,6 +22,9 @@ const TABLE_MAP: Record<string, string> = {
   appointment: 'appointments',
   staff: 'staff',
   lab: 'labs',
+  lab_case: 'lab_cases',
+  payment: 'payments',
+  implant: 'implants',
 };
 
 type SyncRow = ReturnType<typeof nextBatch>[number];
