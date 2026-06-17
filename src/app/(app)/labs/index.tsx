@@ -3,6 +3,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { Button } from '@/design/components/Button';
 import { Card } from '@/design/components/Card';
+import { ChipBar, type ChipItem } from '@/design/components/ChipBar';
 import { Screen } from '@/design/components/Screen';
 import { EmptyState, StatusBadge } from '@/design/components/StateViews';
 import { Text } from '@/design/components/Text';
@@ -16,8 +17,17 @@ export default function LabsListScreen() {
   const isManager = session?.role === 'manager';
   const [items, setItems] = useState<Lab[]>([]);
 
+  const [type, setType] = useState<string>('all');
+
   const reload = useCallback(() => setItems(listLabs()), []);
   useFocusEffect(useCallback(() => reload(), [reload]));
+
+  const types = Array.from(new Set(items.map((l) => l.type)));
+  const visible = items.filter((l) => type === 'all' || l.type === type);
+  const chips: ChipItem<string>[] = [
+    { key: 'all', label: 'همه', count: items.length },
+    ...types.map((t) => ({ key: t, label: LAB_TYPE_LABELS[t], count: items.filter((l) => l.type === t).length })),
+  ];
 
   const confirmDelete = (l: Lab) => {
     Alert.alert('حذف لابراتوار', `«${l.name}» حذف شود؟`, [
@@ -49,11 +59,13 @@ export default function LabsListScreen() {
         <Button title="افزودن لابراتوار جدید" onPress={() => router.push('/(app)/labs/form')} />
       ) : null}
 
+      <ChipBar items={chips} value={type} onChange={setType} />
+
       <ScrollView contentContainerStyle={styles.list}>
-        {items.length === 0 ? (
+        {visible.length === 0 ? (
           <EmptyState message="هنوز لابراتواری ثبت نشده است." />
         ) : (
-          items.map((l) => (
+          visible.map((l) => (
             <Card key={l.id}>
               <View style={styles.rowBetween}>
                 <Text variant="subtitle">{l.name}</Text>

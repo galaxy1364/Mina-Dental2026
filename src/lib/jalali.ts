@@ -2,7 +2,13 @@
  * Jalali (Shamsi) date helpers — UI-only. The database/business layer always
  * stores Gregorian ISO timestamps; conversion to Jalali happens at display time.
  */
-import { format as formatJalaliFn, parse as parseJalaliFn } from 'date-fns-jalali';
+import {
+  addMonths,
+  format as formatJalaliFn,
+  getDaysInMonth,
+  parse as parseJalaliFn,
+  startOfMonth,
+} from 'date-fns-jalali';
 import { toEnglishDigits, toPersianDigits } from './persian';
 
 /** Format a Date/ISO string as a Jalali string with Persian digits. */
@@ -33,9 +39,68 @@ export function jalaliWeekday(date: Date | string | number): string {
   return WEEKDAYS_FA[d.getDay()];
 }
 
+/** Long, human Jalali date, e.g. "شنبه ۲۷ خرداد ۱۴۰۴". */
+export function formatJalaliLong(date: Date | string | number): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) return '—';
+  return `${jalaliWeekday(d)} ${formatJalali(d, 'd MMMM yyyy')}`;
+}
+
 /** Current moment as a Gregorian ISO string (the canonical storage form). */
 export function nowIso(): string {
   return new Date().toISOString();
+}
+
+/** Persian weekday headers, Saturday-first (matches the Jalali week). */
+export const JALALI_WEEKDAY_SHORT = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'] as const;
+
+export interface JalaliMonthCell {
+  /** Gregorian Date at local midnight, or null for leading/trailing blanks. */
+  date: Date | null;
+  /** Jalali day-of-month (1..31), or null for blanks. */
+  day: number | null;
+  /** True for Fridays (official weekly holiday). */
+  holiday: boolean;
+}
+
+export interface JalaliMonth {
+  year: string;
+  monthName: string;
+  /** A reference Date inside this Jalali month. */
+  cursor: Date;
+  cells: JalaliMonthCell[];
+}
+
+/** Shift a reference Date by whole Jalali months. */
+export function addJalaliMonths(date: Date, amount: number): Date {
+  return addMonths(date, amount);
+}
+
+/**
+ * Build a 6×7 month matrix (Saturday-first) for the Jalali month containing
+ * `ref`. Leading/trailing cells are blank so the grid is always rectangular.
+ */
+export function buildJalaliMonth(ref: Date): JalaliMonth {
+  const first = startOfMonth(ref);
+  const days = getDaysInMonth(ref);
+  // JS getDay(): 0=Sun..6=Sat. Jalali week starts Saturday → Saturday = col 0.
+  const lead = (first.getDay() + 1) % 7;
+  const cells: JalaliMonthCell[] = [];
+  for (let i = 0; i < lead; i += 1) cells.push({ date: null, day: null, holiday: false });
+  for (let d = 1; d <= days; d += 1) {
+    const date = new Date(first);
+    date.setDate(d);
+    date.setHours(0, 0, 0, 0);
+    cells.push({ date, day: d, holiday: date.getDay() === 5 });
+  }
+  while (cells.length % 7 !== 0) cells.push({ date: null, day: null, holiday: false });
+  while (cells.length < 42) cells.push({ date: null, day: null, holiday: false });
+  return {
+    year: toPersianDigits(formatJalaliFn(first, 'yyyy')),
+    monthName: formatJalaliFn(first, 'MMMM'),
+    cursor: first,
+    cells,
+  };
 }
 
 /** Today's Jalali date as "yyyy/MM/dd" (English digits, for input prefilling). */

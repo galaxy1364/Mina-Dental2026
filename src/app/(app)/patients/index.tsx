@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { Button } from '@/design/components/Button';
+import { ChipBar, type ChipItem } from '@/design/components/ChipBar';
 import { Input } from '@/design/components/Input';
 import { ListRow } from '@/design/components/ListRow';
 import { Pill } from '@/design/components/Pill';
@@ -13,13 +14,26 @@ import { fullName, listPatients, type Patient } from '@/features/patients/reposi
 import { patientBalance } from '@/features/payments/repository';
 import { formatToman, toPersianDigits } from '@/lib/persian';
 
+type PatientFilter = 'all' | 'debtor' | 'settled';
+
 export default function PatientsScreen() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Patient[]>([]);
+  const [filter, setFilter] = useState<PatientFilter>('all');
 
   const reload = useCallback(() => setItems(listPatients(query)), [query]);
   useFocusEffect(reload);
+
+  const withBalance = items.map((p) => ({ p, bal: patientBalance(p.id) }));
+  const visible = withBalance.filter(({ bal }) =>
+    filter === 'debtor' ? bal > 0 : filter === 'settled' ? bal <= 0 : true,
+  );
+  const chips: ChipItem<PatientFilter>[] = [
+    { key: 'all', label: 'همه', count: withBalance.length },
+    { key: 'debtor', label: 'بدهکار', count: withBalance.filter(({ bal }) => bal > 0).length },
+    { key: 'settled', label: 'تسویه‌شده', count: withBalance.filter(({ bal }) => bal <= 0).length },
+  ];
 
   return (
     <Screen>
@@ -38,14 +52,15 @@ export default function PatientsScreen() {
         <Button title="بیمار جدید" onPress={() => router.push('/(app)/patients/form')} />
       </View>
 
+      <ChipBar items={chips} value={filter} onChange={setFilter} />
+
       <FlatList
-        data={items}
-        keyExtractor={(p) => p.id}
+        data={visible}
+        keyExtractor={({ p }) => p.id}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={<EmptyState message="بیماری یافت نشد. «بیمار جدید» را بزنید." />}
-        renderItem={({ item }) => {
-          const bal = patientBalance(item.id);
+        renderItem={({ item: { p: item, bal } }) => {
           return (
             <ListRow
               title={fullName(item)}

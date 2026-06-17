@@ -1,4 +1,6 @@
+import { View, StyleSheet } from 'react-native';
 import { Redirect, Stack } from 'expo-router';
+import { BottomTabBar } from '@/design/components/BottomTabBar';
 import { Screen } from '@/design/components/Screen';
 import { LoadingState } from '@/design/components/StateViews';
 import { colors } from '@/design/tokens';
@@ -20,8 +22,15 @@ export default function AppLayout() {
   }
 
   return (
-    <Stack
-      screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}
-    />
+    <View style={styles.root}>
+      <Stack
+        screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}
+      />
+      <BottomTabBar />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
+});

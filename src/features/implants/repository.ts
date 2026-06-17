@@ -40,6 +40,15 @@ export interface ImplantInput {
 const activeClinic = () =>
   and(eq(implantsLocal.clinicId, CLINIC.id), isNull(implantsLocal.deletedAt));
 
+export function listImplants(): Implant[] {
+  return db
+    .select()
+    .from(implantsLocal)
+    .where(activeClinic())
+    .orderBy(desc(implantsLocal.placedAt))
+    .all();
+}
+
 export function listImplantsForPatient(patientId: string): Implant[] {
   return db
     .select()

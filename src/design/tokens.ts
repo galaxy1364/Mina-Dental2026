@@ -33,6 +33,31 @@ export const colors = {
   conflict: '#DC2626',
 } as const;
 
+/**
+ * Vibrant tile colors for the home icon grid (Iranian super-app aesthetic).
+ * Each section owns a hue so it is instantly recognizable.
+ */
+export const tile = {
+  patients: '#0EA5A4',
+  appointments: '#6366F1',
+  calendar: '#EC4899',
+  labcases: '#F59E0B',
+  implants: '#8B5CF6',
+  finance: '#16A34A',
+  inventory: '#0EA5E9',
+  staff: '#EF4444',
+  labs: '#14B8A6',
+  reports: '#64748B',
+  rent: '#D946EF',
+  dentalChart: '#0891B2',
+} as const;
+
+export const gradients = {
+  brand: ['#0F766E', '#0EA5A4'] as const,
+  finance: ['#15803D', '#22C55E'] as const,
+  violet: ['#6D28D9', '#8B5CF6'] as const,
+};
+
 export const spacing = {
   xs: 4,
   sm: 8,

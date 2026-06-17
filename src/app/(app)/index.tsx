@@ -1,57 +1,40 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { eq, sql } from 'drizzle-orm';
-import { Button } from '@/design/components/Button';
-import { Card } from '@/design/components/Card';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Logo } from '@/design/components/Logo';
 import { Screen } from '@/design/components/Screen';
-import { StatCard } from '@/design/components/StatCard';
-import { StatusBadge } from '@/design/components/StateViews';
+import { IconTile } from '@/design/components/IconTile';
 import { Text } from '@/design/components/Text';
-import { spacing } from '@/design/tokens';
-import { db } from '@/core/db/client';
-import { appBootAudit, localMeta } from '@/core/db/schema';
-import { getSyncSnapshot, processQueue, retryFailed } from '@/core/sync/syncEngine';
+import { Icon } from '@/design/icons/Icon';
+import { colors, gradients, radius, shadow, spacing, tile } from '@/design/tokens';
+import { getSyncSnapshot } from '@/core/sync/syncEngine';
 import { computeClinicDashboard, type ClinicDashboard } from '@/features/journey/engine';
 import { useAuth } from '@/features/auth/useAuth';
-import { formatJalaliDateTime, nowIso } from '@/lib/jalali';
+import { formatJalaliLong, nowIso } from '@/lib/jalali';
 import { formatToman, toPersianDigits } from '@/lib/persian';
 
-interface Health {
-  schemaVersion: string;
-  bootCount: number;
-  pending: number;
-  online: boolean;
-  configured: boolean;
-  failed: number;
-}
-
-function readHealth(): Health {
-  const version = db.select().from(localMeta).where(eq(localMeta.key, 'schema_version')).get();
-  const boots = db.select({ c: sql<number>`count(*)` }).from(appBootAudit).get();
-  const snap = getSyncSnapshot();
-  return {
-    schemaVersion: version?.value ?? '—',
-    bootCount: boots?.c ?? 0,
-    pending: snap.pending,
-    online: snap.online,
-    configured: snap.configured,
-    failed: snap.failed,
-  };
+interface QuickLink {
+  label: string;
+  icon: Parameters<typeof IconTile>[0]['icon'];
+  color: string;
+  route: string;
+  badge?: () => string | undefined;
 }
 
 export default function Dashboard() {
   const router = useRouter();
-  const { session, signOut } = useAuth();
-  const isManager = session?.role === 'manager';
-  const [health, setHealth] = useState<Health>(() => readHealth());
+  const { session } = useAuth();
   const [stats, setStats] = useState<ClinicDashboard>(() => computeClinicDashboard());
+  const [online, setOnline] = useState<boolean>(() => getSyncSnapshot().online);
+  const [pending, setPending] = useState<number>(() => getSyncSnapshot().pending);
   const [now] = useState(() => nowIso());
 
   const refresh = useCallback(() => {
-    setHealth(readHealth());
     setStats(computeClinicDashboard());
+    const snap = getSyncSnapshot();
+    setOnline(snap.online);
+    setPending(snap.pending);
   }, []);
 
   useFocusEffect(refresh);
@@ -60,166 +43,188 @@ export default function Dashboard() {
     return () => clearInterval(id);
   }, [refresh]);
 
+  const links: QuickLink[] = [
+    { label: 'بیماران', icon: 'tooth', color: tile.patients, route: '/(app)/patients' },
+    { label: 'نوبت‌دهی', icon: 'clock', color: tile.appointments, route: '/(app)/appointments' },
+    { label: 'تقویم', icon: 'calendar', color: tile.calendar, route: '/(app)/calendar' },
+    {
+      label: 'لابراتوار',
+      icon: 'flask',
+      color: tile.labcases,
+      route: '/(app)/labcases',
+      badge: () => (stats.overdueLabCases > 0 ? toPersianDigits(stats.overdueLabCases) : undefined),
+    },
+    { label: 'ایمپلنت', icon: 'implant', color: tile.implants, route: '/(app)/implants' },
+    { label: 'مالی', icon: 'wallet', color: tile.finance, route: '/(app)/payments' },
+    { label: 'کادر درمان', icon: 'users', color: tile.staff, route: '/(app)/staff' },
+    { label: 'خدمات', icon: 'grid', color: tile.reports, route: '/(app)/more' },
+  ];
+
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={styles.content}>
+    <Screen edges={['top']} padded={false}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Logo size={48} />
-          <Text variant="caption" tone="secondary">
-            {formatJalaliDateTime(now)}
-          </Text>
-        </View>
-
-        <View style={styles.grid}>
-          <StatCard
-            label="نوبت‌های امروز"
-            value={toPersianDigits(stats.todayAppointments)}
-            tone="info"
-            icon="◷"
-            onPress={() => router.push('/(app)/appointments')}
-          />
-          <StatCard
-            label="بیماران"
-            value={toPersianDigits(stats.patients)}
-            tone="success"
-            icon="⊕"
-            onPress={() => router.push('/(app)/patients')}
-          />
-          <StatCard
-            label="سفارش‌های در جریان"
-            value={toPersianDigits(stats.openLabCases)}
-            hint={stats.overdueLabCases > 0 ? `${toPersianDigits(stats.overdueLabCases)} معوق` : undefined}
-            tone={stats.overdueLabCases > 0 ? 'danger' : 'warning'}
-            icon="⚙"
-            onPress={() => router.push('/(app)/labcases')}
-          />
-          <StatCard
-            label="مطالبات کلینیک"
-            value={stats.outstanding > 0 ? formatToman(stats.outstanding, false) : '۰'}
-            hint={stats.outstanding > 0 ? 'تومان' : 'تسویه'}
-            tone={stats.outstanding > 0 ? 'warning' : 'success'}
-            icon="₪"
-            onPress={() => router.push('/(app)/payments')}
-          />
-        </View>
-
-        <Card>
-          <Text variant="subtitle">خوش آمدید</Text>
-          <Text variant="body" tone="secondary">
-            {session?.displayName ?? session?.email ?? 'کاربر'}
-          </Text>
-          {session?.role ? (
-            <View style={styles.badgeRow}>
-              <StatusBadge tone="synced" label={`نقش: ${session.role}`} />
+          <Logo size={42} />
+          <View style={styles.headerRight}>
+            <View style={[styles.statusPill, { backgroundColor: online ? colors.primaryLight : colors.surfaceAlt }]}>
+              <Icon name="cloud" size={14} color={online ? colors.primaryDark : colors.textMuted} />
+              <Text variant="caption" style={{ color: online ? colors.primaryDark : colors.textMuted }}>
+                {online ? 'آنلاین' : 'آفلاین'}
+              </Text>
             </View>
-          ) : null}
-        </Card>
-
-        <Card>
-          <Text variant="subtitle">مدیریت</Text>
-          <View style={styles.menu}>
-            <MenuItem label="بیماران" onPress={() => router.push('/(app)/patients')} />
-            <MenuItem label="نوبت‌دهی" onPress={() => router.push('/(app)/appointments')} />
-            <MenuItem label="سفارش‌های لابراتوار" onPress={() => router.push('/(app)/labcases')} />
-            <MenuItem label="مالی" onPress={() => router.push('/(app)/payments')} />
-            <MenuItem label="کادر درمان و پرسنل" onPress={() => router.push('/(app)/staff')} />
-            <MenuItem label="لابراتوارها" onPress={() => router.push('/(app)/labs')} />
+            <Pressable style={styles.bell} onPress={() => router.push('/(app)/more')}>
+              <Icon name="bell" size={20} color={colors.textSecondary} />
+              {pending > 0 ? <View style={styles.bellDot} /> : null}
+            </Pressable>
           </View>
-          {!isManager ? (
-            <Text variant="caption" tone="muted">
-              فقط مدیر می‌تواند افزودن/ویرایش/حذف انجام دهد.
-            </Text>
-          ) : null}
-        </Card>
+        </View>
 
-        <Card>
-          <Text variant="subtitle">وضعیت سامانه</Text>
-          <Row label="اتصال">
-            <StatusBadge tone={health.online ? 'synced' : 'offline'} label={health.online ? 'آنلاین' : 'آفلاین'} />
-          </Row>
-          <Row label="صف همگام‌سازی">
-            <StatusBadge
-              tone={health.pending > 0 ? 'pendingSync' : 'synced'}
-              label={health.pending > 0 ? `${toPersianDigits(health.pending)} در انتظار` : 'همگام'}
-            />
-          </Row>
-          {health.failed > 0 ? (
-            <Row label="ناموفق (نیازمند تلاش مجدد)">
-              <StatusBadge tone="conflict" label={`${toPersianDigits(health.failed)} رکورد`} />
-            </Row>
-          ) : null}
-          <Row label="سرویس ابری">
-            <StatusBadge
-              tone={health.configured ? 'synced' : 'offline'}
-              label={health.configured ? 'پیکربندی‌شده' : 'پیکربندی‌نشده'}
-            />
-          </Row>
-          <Row label="پایگاه‌دادهٔ محلی">
-            <Text variant="caption" tone="muted">
-              نسخهٔ شِما {toPersianDigits(health.schemaVersion)} · {toPersianDigits(health.bootCount)} بار راه‌اندازی
-            </Text>
-          </Row>
-        </Card>
+        <LinearGradient colors={gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+          <Text variant="caption" style={styles.heroLabel}>
+            مانده مطالبات کلینیک
+          </Text>
+          <Text variant="title" style={styles.heroValue}>
+            {formatToman(stats.outstanding)}
+          </Text>
+          <Text variant="caption" style={styles.heroDate}>
+            {formatJalaliLong(now)}
+          </Text>
 
-        <View style={styles.actions}>
-          <Button title="همگام‌سازی دستی" kind="secondary" onPress={() => void processQueue().then(refresh)} />
-          {health.failed > 0 ? (
-            <Button title="تلاش مجدد رکوردهای ناموفق" kind="secondary" onPress={() => void retryFailed().then(refresh)} />
-          ) : null}
-          <Button title="خروج از حساب" kind="ghost" onPress={() => void signOut()} />
+          <View style={styles.heroStats}>
+            <HeroStat label="نوبت امروز" value={toPersianDigits(stats.todayAppointments)} />
+            <View style={styles.heroDivider} />
+            <HeroStat label="بیماران" value={toPersianDigits(stats.patients)} />
+            <View style={styles.heroDivider} />
+            <HeroStat label="سفارش باز" value={toPersianDigits(stats.openLabCases)} />
+          </View>
+        </LinearGradient>
+
+        <Pressable style={styles.welcome} onPress={() => router.push('/(app)/more')}>
+          <View>
+            <Text variant="body" tone="secondary">
+              خوش آمدید
+            </Text>
+            <Text variant="subtitle">{session?.displayName ?? session?.email ?? 'کاربر'}</Text>
+          </View>
+          <View style={styles.roleChip}>
+            <Text variant="caption" style={{ color: colors.primaryDark }}>
+              {roleLabel(session?.role)}
+            </Text>
+          </View>
+        </Pressable>
+
+        <Text variant="subtitle" style={styles.sectionTitle}>
+          دسترسی سریع
+        </Text>
+        <View style={styles.grid}>
+          {links.map((l) => (
+            <IconTile
+              key={l.label}
+              label={l.label}
+              icon={l.icon}
+              color={l.color}
+              badge={l.badge?.()}
+              onPress={() => router.push(l.route as never)}
+            />
+          ))}
         </View>
       </ScrollView>
     </Screen>
   );
 }
 
-function MenuItem({ label, onPress }: { label: string; onPress: () => void }) {
+function HeroStat({ label, value }: { label: string; value: string }) {
   return (
-    <Pressable style={styles.menuItem} onPress={onPress}>
-      <Text variant="body" tone="primary">
+    <View style={styles.heroStat}>
+      <Text variant="subtitle" style={styles.heroStatValue}>
+        {value}
+      </Text>
+      <Text variant="caption" style={styles.heroStatLabel}>
         {label}
       </Text>
-      <Text variant="caption" tone="muted">
-        ‹
-      </Text>
-    </Pressable>
-  );
-}
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.row}>
-      <Text variant="body" tone="secondary">
-        {label}
-      </Text>
-      {children}
     </View>
   );
 }
 
+function roleLabel(role?: string | null): string {
+  switch (role) {
+    case 'manager':
+      return 'مدیر';
+    case 'doctor':
+      return 'پزشک';
+    case 'secretary':
+      return 'منشی';
+    case 'assistant':
+      return 'دستیار';
+    default:
+      return 'کاربر';
+  }
+}
+
 const styles = StyleSheet.create({
-  content: { gap: spacing.lg, paddingBottom: spacing.xl },
-  header: {
+  content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
+  header: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
+  headerRight: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.sm },
+  statusPill: {
     flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
   },
-  grid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: spacing.md },
-  row: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.md,
+  bell: { padding: spacing.sm, position: 'relative' },
+  bellDot: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.danger,
   },
-  badgeRow: { marginTop: spacing.sm, flexDirection: 'row' },
-  actions: { gap: spacing.md, marginTop: spacing.sm },
-  menu: { marginTop: spacing.sm },
-  menuItem: {
+  hero: {
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    gap: spacing.xs,
+    ...shadow.card,
+  },
+  heroLabel: { color: 'rgba(255,255,255,0.85)' },
+  heroValue: { color: colors.textInverse, fontSize: 30, lineHeight: 42 },
+  heroDate: { color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  heroStats: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.lg,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: radius.lg,
+    padding: spacing.md,
+  },
+  heroStat: { flex: 1, alignItems: 'center', gap: 2 },
+  heroStatValue: { color: colors.textInverse },
+  heroStatLabel: { color: 'rgba(255,255,255,0.8)' },
+  heroDivider: { width: StyleSheet.hairlineWidth, height: 28, backgroundColor: 'rgba(255,255,255,0.35)' },
+  welcome: {
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    ...shadow.card,
+  },
+  roleChip: {
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+  },
+  sectionTitle: { marginTop: spacing.xs },
+  grid: {
+    flexDirection: 'row-reverse',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: spacing.lg,
   },
 });

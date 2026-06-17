@@ -1,5 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  addJalaliMonths,
+  buildJalaliMonth,
   formatJalali,
   isoToJalaliDate,
   jalaliWeekday,
@@ -41,5 +43,28 @@ describe('jalali parsing', () => {
     expect(parseJalaliToIso('not-a-date')).toBeNull();
     expect(parseJalaliToIso('1403-01-01')).toBeNull();
     expect(parseJalaliToIso('1403/01/01', 'bad')).toBeNull();
+  });
+});
+
+describe('jalali month grid', () => {
+  it('builds a rectangular 42-cell matrix', () => {
+    const m = buildJalaliMonth(new Date('2024-03-20T10:00:00Z'));
+    expect(m.cells).toHaveLength(42);
+  });
+
+  it('starts Farvardin 1403 (a 31-day month) on Saturday (column 0)', () => {
+    // 1403/01/01 (Nowruz) falls on a Wednesday → column 4 (Sat-first week).
+    const m = buildJalaliMonth(new Date('2024-03-20T10:00:00Z'));
+    const firstReal = m.cells.findIndex((c) => c.day === 1);
+    expect(firstReal).toBe(4);
+    const days = m.cells.filter((c) => c.day !== null).length;
+    expect(days).toBe(31);
+  });
+
+  it('moves to the previous/next Jalali month', () => {
+    const ref = new Date('2024-03-20T10:00:00Z'); // 1403/01
+    const prev = buildJalaliMonth(addJalaliMonths(ref, -1));
+    const next = buildJalaliMonth(addJalaliMonths(ref, 1));
+    expect(prev.monthName).not.toBe(next.monthName);
   });
 });

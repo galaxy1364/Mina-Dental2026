@@ -3,6 +3,7 @@ import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Button } from '@/design/components/Button';
 import { Card } from '@/design/components/Card';
+import { ChipBar, type ChipItem } from '@/design/components/ChipBar';
 import { ListRow } from '@/design/components/ListRow';
 import { Pill } from '@/design/components/Pill';
 import { Screen } from '@/design/components/Screen';
@@ -22,15 +23,25 @@ import { fullName, getPatient } from '@/features/patients/repository';
 import { formatJalali } from '@/lib/jalali';
 import { formatToman } from '@/lib/persian';
 
+type PayFilter = 'all' | 'payment' | 'charge';
+
 export default function PaymentsScreen() {
   const router = useRouter();
   const { patientId } = useLocalSearchParams<{ patientId?: string }>();
   const [items, setItems] = useState<Payment[]>([]);
+  const [filter, setFilter] = useState<PayFilter>('all');
 
   const reload = useCallback(() => {
     setItems(patientId ? listPaymentsForPatient(patientId) : listRecentPayments());
   }, [patientId]);
   useFocusEffect(reload);
+
+  const visible = items.filter((p) => filter === 'all' || p.direction === filter);
+  const chips: ChipItem<PayFilter>[] = [
+    { key: 'all', label: 'همه', count: items.length },
+    { key: 'payment', label: 'دریافت', count: items.filter((p) => p.direction === 'payment').length },
+    { key: 'charge', label: 'بدهکاری', count: items.filter((p) => p.direction === 'charge').length },
+  ];
 
   const patient = patientId ? getPatient(patientId) : undefined;
   const balance = patientId ? patientBalance(patientId) : totalOutstanding();
@@ -68,11 +79,13 @@ export default function PaymentsScreen() {
         <Button title="ثبت تراکنش جدید" onPress={openNew} />
       </View>
 
+      <ChipBar items={chips} value={filter} onChange={setFilter} />
+
       <ScrollView contentContainerStyle={styles.list}>
-        {items.length === 0 ? (
+        {visible.length === 0 ? (
           <EmptyState message="تراکنشی ثبت نشده است." />
         ) : (
-          items.map((p) => {
+          visible.map((p) => {
             const pt = getPatient(p.patientId);
             return (
               <ListRow
