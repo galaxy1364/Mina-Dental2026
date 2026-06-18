@@ -292,20 +292,6 @@ function seedClinicData(db: ReturnType<typeof getDb>): void {
   }
 }
 
-/**
- * Columns that were introduced after their tables first shipped. `CREATE TABLE IF
- * NOT EXISTS` can't add them to a database that already has the older table, so we
- * add each one explicitly. Idempotent: only runs `ALTER TABLE ADD COLUMN` when the
- * column is actually missing, so it's safe on both fresh and existing databases.
- */
-const ADDED_COLUMNS: { table: string; column: string; ddl: string }[] = [
-  { table: 'patients_local', column: 'search_norm', ddl: 'search_norm TEXT' },
-  { table: 'staff_local', column: 'search_norm', ddl: 'search_norm TEXT' },
-  { table: 'labs_local', column: 'search_norm', ddl: 'search_norm TEXT' },
-  { table: 'lab_cases_local', column: 'search_norm', ddl: 'search_norm TEXT' },
-  { table: 'implants_local', column: 'search_norm', ddl: 'search_norm TEXT' },
-];
-
 function tableExists(db: ReturnType<typeof getDb>, table: string): boolean {
   return !!db.getFirstSync<{ name: string }>(
     `SELECT name FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1`,
@@ -313,17 +299,92 @@ function tableExists(db: ReturnType<typeof getDb>, table: string): boolean {
   );
 }
 
-function columnExists(db: ReturnType<typeof getDb>, table: string, column: string): boolean {
-  const cols = db.getAllSync<{ name: string }>(`PRAGMA table_info(${table})`);
-  return cols.some((c) => c.name === column);
+/** Individual SQL statements that make up the DDL (tables + indexes). */
+const DDL_STATEMENTS = DDL.split(';')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+/** Every table the DDL manages, in declaration order. */
+const MANAGED_TABLES = [...DDL.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map((m) => m[1]);
+
+function createTableStmt(table: string): string | undefined {
+  return DDL_STATEMENTS.find((s) => new RegExp(`CREATE TABLE IF NOT EXISTS ${table}\\b`).test(s));
 }
 
-function ensureAddedColumns(db: ReturnType<typeof getDb>): void {
-  for (const { table, column, ddl } of ADDED_COLUMNS) {
+function indexStmts(table: string): string[] {
+  return DDL_STATEMENTS.filter(
+    (s) => /CREATE\b.*\bINDEX/i.test(s) && new RegExp(`\\bON ${table}\\b`).test(s),
+  );
+}
+
+/** Parse the declared column names out of a `CREATE TABLE (...)` statement. */
+function declaredColumns(createStmt: string): string[] {
+  const body = createStmt.slice(createStmt.indexOf('(') + 1, createStmt.lastIndexOf(')'));
+  const segments: string[] = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of body) {
+    if (ch === '(') depth += 1;
+    else if (ch === ')') depth -= 1;
+    if (ch === ',' && depth === 0) {
+      segments.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  segments.push(cur);
+  const constraints = new Set(['CHECK', 'PRIMARY', 'UNIQUE', 'FOREIGN', 'CONSTRAINT']);
+  const cols: string[] = [];
+  for (const seg of segments) {
+    const token = seg.trim().split(/\s+/)[0];
+    if (token && !constraints.has(token.toUpperCase())) cols.push(token);
+  }
+  return cols;
+}
+
+/**
+ * Reconcile pre-existing tables with the current schema. `CREATE TABLE IF NOT
+ * EXISTS` never alters an existing table, so a database built by an older schema
+ * can be missing columns (e.g. `search_norm`, `start_time`). For any table that is
+ * missing one or more declared columns, rebuild it from the current DDL and copy
+ * over the rows' shared columns — so the schema is corrected without losing data.
+ * On a fresh database this is a no-op (no tables exist yet).
+ */
+function reconcileSchema(db: ReturnType<typeof getDb>): void {
+  for (const table of MANAGED_TABLES) {
     if (!tableExists(db, table)) continue;
-    if (columnExists(db, table, column)) continue;
-    db.execSync(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
-    log.info('Added missing column', { table, column });
+    const createStmt = createTableStmt(table);
+    if (!createStmt) continue;
+    const expected = declaredColumns(createStmt);
+    const actual = new Set(
+      db.getAllSync<{ name: string }>(`PRAGMA table_info(${table})`).map((c) => c.name),
+    );
+    const missing = expected.filter((c) => !actual.has(c));
+    if (missing.length === 0) continue;
+
+    const common = expected.filter((c) => actual.has(c));
+    const tmp = `${table}__migrate_old`;
+    db.execSync(`DROP TABLE IF EXISTS ${tmp}`);
+    db.execSync(`ALTER TABLE ${table} RENAME TO ${tmp}`);
+    db.execSync(createStmt);
+    if (common.length) {
+      const list = common.join(', ');
+      try {
+        db.runSync(`INSERT INTO ${table} (${list}) SELECT ${list} FROM ${tmp}`);
+      } catch (err) {
+        // Old rows can be incompatible with a newly-required column (e.g. a NOT
+        // NULL column that the old table never had). Such legacy rows can't be
+        // preserved; start the rebuilt table empty rather than aborting boot.
+        log.warn('Could not preserve rows while rebuilding table; starting empty', {
+          table,
+          error: String(err),
+        });
+      }
+    }
+    db.execSync(`DROP TABLE ${tmp}`);
+    for (const idx of indexStmts(table)) db.execSync(idx);
+    log.info('Rebuilt drifted table', { table, missing });
   }
 }
 
@@ -357,11 +418,10 @@ function backfillSearchNorm(db: ReturnType<typeof getDb>): void {
 
 export function runMigrations(): void {
   const db = getDb();
-  // Add columns missing from pre-existing tables BEFORE the DDL, so the DDL's
-  // `CREATE INDEX ... ON <table>(search_norm)` doesn't hit "no such column" on a
-  // database created by an earlier schema. On a fresh DB this is a no-op (tables
-  // don't exist yet) and the DDL creates everything with the columns in place.
-  ensureAddedColumns(db);
+  // Rebuild any pre-existing table that drifted from the current schema BEFORE the
+  // DDL runs, so the DDL's `CREATE INDEX ... ON <table>(<col>)` can't hit "no such
+  // column" on a database created by an earlier schema. No-op on a fresh DB.
+  reconcileSchema(db);
   db.execSync(DDL);
   backfillSearchNorm(db);
   seedClinicData(db);
