@@ -23,7 +23,7 @@ export function IconTile({
   badge?: string;
 }) {
   return (
-    <Pressable style={styles.wrap} onPress={onPress} hitSlop={4}>
+    <Pressable style={[styles.wrap, { width: Math.max(78, size + 24) }]} onPress={onPress} hitSlop={4}>
       <View
         style={[
           styles.tile,
@@ -47,7 +47,7 @@ export function IconTile({
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', gap: spacing.xs, width: 78 },
+  wrap: { alignItems: 'center', gap: spacing.xs },
   tile: {
     alignItems: 'center',
     justifyContent: 'center',

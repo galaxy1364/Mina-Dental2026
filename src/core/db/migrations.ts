@@ -387,6 +387,7 @@ function rebuildTable(
     db.execSync(`DROP TABLE IF EXISTS ${tmp}`);
     db.execSync(`ALTER TABLE ${table} RENAME TO ${tmp}`);
     db.execSync(createStmt);
+    let copied = true;
     if (common.length) {
       const list = common.join(', ');
       try {
@@ -394,14 +395,24 @@ function rebuildTable(
       } catch (err) {
         // Old rows can be incompatible with a newly-required column (e.g. a NOT
         // NULL column that the old table never had). Such legacy rows can't be
-        // preserved; start the rebuilt table empty rather than aborting boot.
-        log.warn('Could not preserve rows while rebuilding table; starting empty', {
+        // copied automatically, but we must NOT silently lose them: keep the
+        // original rows in a quarantine table so boot can proceed with a clean
+        // table while the data stays recoverable.
+        copied = false;
+        log.warn('Could not preserve rows while rebuilding table; quarantining old rows', {
           table,
           error: String(err),
         });
       }
     }
-    db.execSync(`DROP TABLE ${tmp}`);
+    if (copied) {
+      db.execSync(`DROP TABLE ${tmp}`);
+    } else {
+      const quarantine = `${table}__quarantine`;
+      db.execSync(`DROP TABLE IF EXISTS ${quarantine}`);
+      db.execSync(`ALTER TABLE ${tmp} RENAME TO ${quarantine}`);
+      log.warn('Legacy rows preserved for recovery', { table, quarantine });
+    }
     for (const idx of indexStmts(table)) db.execSync(idx);
     db.execSync('COMMIT');
     log.info('Rebuilt drifted table', { table, missing });

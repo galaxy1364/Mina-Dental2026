@@ -13,11 +13,13 @@ import { boot } from '@/core/boot';
 import { AppProviders } from '@/providers/AppProviders';
 import { colors } from '@/design/tokens';
 
-// Enforce RTL layout app-wide.
-if (!I18nManager.isRTL) {
-  I18nManager.allowRTL(true);
-  I18nManager.forceRTL(true);
-}
+// RTL is realized purely through explicit `flexDirection: 'row-reverse'` +
+// `textAlign: 'right'` layouts, NOT via native RTL. `I18nManager.forceRTL` is
+// unreliable in Expo Go (it only applies after a reload, so the layout direction
+// would oscillate between launches). Pin native RTL OFF so `row-reverse` always
+// means right-to-left deterministically across every launch.
+I18nManager.allowRTL(false);
+I18nManager.forceRTL(false);
 
 void SplashScreen.preventAutoHideAsync();
 

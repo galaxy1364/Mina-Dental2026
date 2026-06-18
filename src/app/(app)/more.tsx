@@ -81,6 +81,7 @@ export default function MoreScreen() {
                 label={s.label}
                 icon={s.icon}
                 color={s.color}
+                size={76}
                 onPress={() => router.push(s.route as never)}
               />
             ))}

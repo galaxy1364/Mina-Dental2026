@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   pressed: { opacity: 0.85 },
-  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  top: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
   iconWrap: {
     width: 40,
     height: 40,
