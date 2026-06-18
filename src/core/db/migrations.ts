@@ -6,7 +6,7 @@ import { normalizePersian } from '@/lib/persian';
 
 const log = createLogger('migrations');
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /**
  * Idempotent bootstrap of the local schema. Uses CREATE TABLE IF NOT EXISTS so it
@@ -292,9 +292,78 @@ function seedClinicData(db: ReturnType<typeof getDb>): void {
   }
 }
 
+/**
+ * Columns that were introduced after their tables first shipped. `CREATE TABLE IF
+ * NOT EXISTS` can't add them to a database that already has the older table, so we
+ * add each one explicitly. Idempotent: only runs `ALTER TABLE ADD COLUMN` when the
+ * column is actually missing, so it's safe on both fresh and existing databases.
+ */
+const ADDED_COLUMNS: { table: string; column: string; ddl: string }[] = [
+  { table: 'patients_local', column: 'search_norm', ddl: 'search_norm TEXT' },
+  { table: 'staff_local', column: 'search_norm', ddl: 'search_norm TEXT' },
+  { table: 'labs_local', column: 'search_norm', ddl: 'search_norm TEXT' },
+  { table: 'lab_cases_local', column: 'search_norm', ddl: 'search_norm TEXT' },
+  { table: 'implants_local', column: 'search_norm', ddl: 'search_norm TEXT' },
+];
+
+function tableExists(db: ReturnType<typeof getDb>, table: string): boolean {
+  return !!db.getFirstSync<{ name: string }>(
+    `SELECT name FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1`,
+    [table],
+  );
+}
+
+function columnExists(db: ReturnType<typeof getDb>, table: string, column: string): boolean {
+  const cols = db.getAllSync<{ name: string }>(`PRAGMA table_info(${table})`);
+  return cols.some((c) => c.name === column);
+}
+
+function ensureAddedColumns(db: ReturnType<typeof getDb>): void {
+  for (const { table, column, ddl } of ADDED_COLUMNS) {
+    if (!tableExists(db, table)) continue;
+    if (columnExists(db, table, column)) continue;
+    db.execSync(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+    log.info('Added missing column', { table, column });
+  }
+}
+
+/** Source columns that compose each table's normalized search string. */
+const SEARCH_NORM_SOURCES: { table: string; columns: string[] }[] = [
+  { table: 'patients_local', columns: ['first_name', 'last_name', 'mobile', 'national_code'] },
+  { table: 'staff_local', columns: ['full_name'] },
+  { table: 'labs_local', columns: ['name'] },
+  { table: 'lab_cases_local', columns: ['title'] },
+  { table: 'implants_local', columns: ['brand', 'system'] },
+];
+
+/**
+ * Recompute `search_norm` (via JS `normalizePersian`) for rows where it is NULL —
+ * i.e. rows that predate the column being added — so existing records stay
+ * searchable. Idempotent: only touches rows still missing the value.
+ */
+function backfillSearchNorm(db: ReturnType<typeof getDb>): void {
+  for (const { table, columns } of SEARCH_NORM_SOURCES) {
+    if (!tableExists(db, table)) continue;
+    const rows = db.getAllSync<Record<string, string | null>>(
+      `SELECT id, ${columns.join(', ')} FROM ${table} WHERE search_norm IS NULL`,
+    );
+    for (const row of rows) {
+      const norm = normalizePersian(columns.map((c) => row[c] ?? '').join(' '));
+      db.runSync(`UPDATE ${table} SET search_norm = ? WHERE id = ?`, [norm, row.id]);
+    }
+    if (rows.length) log.info('Backfilled search_norm', { table, rows: rows.length });
+  }
+}
+
 export function runMigrations(): void {
   const db = getDb();
+  // Add columns missing from pre-existing tables BEFORE the DDL, so the DDL's
+  // `CREATE INDEX ... ON <table>(search_norm)` doesn't hit "no such column" on a
+  // database created by an earlier schema. On a fresh DB this is a no-op (tables
+  // don't exist yet) and the DDL creates everything with the columns in place.
+  ensureAddedColumns(db);
   db.execSync(DDL);
+  backfillSearchNorm(db);
   seedClinicData(db);
   db.runSync(
     `INSERT INTO local_meta (key, value, updated_at) VALUES ('schema_version', ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))
