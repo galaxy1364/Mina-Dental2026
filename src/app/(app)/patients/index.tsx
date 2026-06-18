@@ -42,7 +42,6 @@ export default function PatientsScreen() {
     <Screen edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <Button title="بازگشت ›" kind="ghost" onPress={() => router.back()} />
         <Text variant="title">بیماران</Text>
       </View>
 

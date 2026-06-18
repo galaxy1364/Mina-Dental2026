@@ -62,7 +62,9 @@ export default function PaymentsScreen() {
     <Screen edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <Button title="بازگشت ›" kind="ghost" onPress={() => router.back()} />
+        {patientId ? (
+          <Button title="بازگشت ›" kind="ghost" onPress={() => router.back()} />
+        ) : null}
         <Text variant="title">{patient ? `صورتحساب ${fullName(patient)}` : 'مالی کلینیک'}</Text>
       </View>
 
