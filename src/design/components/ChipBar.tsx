@@ -15,9 +15,11 @@ interface ChipBarProps<T extends string> {
 }
 
 /**
- * Right-aligned, horizontally scrollable filter chip bar (RTL). Chips start at
- * the right edge; when they overflow, the user scrolls toward the left to reach
- * the rest. Shared by every module screen for a consistent, modern feel.
+ * Right-aligned, horizontally scrollable filter chip bar. This app realizes RTL
+ * via `flexDirection: 'row-reverse'` throughout (the same convention used by
+ * every other screen), so the first chip sits at the right edge and overflow
+ * scrolls toward the left; `direction: 'rtl'` right-anchors the scroll offset so
+ * the first chips are visible initially. Shared by every module screen.
  */
 export function ChipBar<T extends string>({ items, value, onChange }: ChipBarProps<T>) {
   return (

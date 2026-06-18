@@ -5,7 +5,7 @@
  */
 import { listAppointmentsBetween, APPOINTMENT_STATUS_LABELS } from '@/features/appointments/repository';
 import { listLabCases } from '@/features/labCases/repository';
-import { listRecentPayments } from '@/features/payments/repository';
+import { listPaymentsBetween } from '@/features/payments/repository';
 import { fullName, getPatient } from '@/features/patients/repository';
 import { formatToman } from '@/lib/persian';
 import { isoToTime } from '@/lib/jalali';
@@ -65,8 +65,7 @@ export function listCalendarEvents(startIso: string, endIso: string): CalendarEv
     });
   }
 
-  for (const p of listRecentPayments(1000)) {
-    if (!inRange(p.paidAt, startIso, endIso)) continue;
+  for (const p of listPaymentsBetween(startIso, endIso)) {
     const verb = p.direction === 'payment' ? 'دریافت' : 'صورتحساب';
     events.push({
       id: `pay-${p.id}`,

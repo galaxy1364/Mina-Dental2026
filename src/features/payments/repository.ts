@@ -2,7 +2,7 @@
  * Finance ledger (مالی) — offline-first. A `charge` increases what a patient owes,
  * a `payment` reduces it. Balance = sum(charges) − sum(payments). Soft-delete only.
  */
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, lt, sql } from 'drizzle-orm';
 import { db } from '@/core/db/client';
 import { paymentsLocal } from '@/core/db/schema';
 import { CLINIC } from '@/core/clinic';
@@ -59,6 +59,19 @@ export function listRecentPayments(limit = 50): Payment[] {
     .where(activeClinic())
     .orderBy(desc(paymentsLocal.paidAt))
     .limit(limit)
+    .all();
+}
+
+/** Payments whose `paidAt` falls within [startIso, endIso). Range-queried so the
+ * calendar never silently drops older records the way a recent-N limit would. */
+export function listPaymentsBetween(startIso: string, endIso: string): Payment[] {
+  return db
+    .select()
+    .from(paymentsLocal)
+    .where(
+      and(activeClinic(), gte(paymentsLocal.paidAt, startIso), lt(paymentsLocal.paidAt, endIso)),
+    )
+    .orderBy(desc(paymentsLocal.paidAt))
     .all();
 }
 
