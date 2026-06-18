@@ -54,6 +54,7 @@ export function listCalendarEvents(startIso: string, endIso: string): CalendarEv
   }
 
   for (const c of listLabCases()) {
+    if (c.status === 'cancelled') continue;
     if (!inRange(c.dueAt, startIso, endIso)) continue;
     events.push({
       id: `lab-${c.id}`,

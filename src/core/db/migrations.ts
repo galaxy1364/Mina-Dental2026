@@ -351,20 +351,39 @@ function declaredColumns(createStmt: string): string[] {
  * over the rows' shared columns — so the schema is corrected without losing data.
  * On a fresh database this is a no-op (no tables exist yet).
  */
-function reconcileSchema(db: ReturnType<typeof getDb>): void {
-  for (const table of MANAGED_TABLES) {
-    if (!tableExists(db, table)) continue;
-    const createStmt = createTableStmt(table);
-    if (!createStmt) continue;
-    const expected = declaredColumns(createStmt);
-    const actual = new Set(
-      db.getAllSync<{ name: string }>(`PRAGMA table_info(${table})`).map((c) => c.name),
-    );
-    const missing = expected.filter((c) => !actual.has(c));
-    if (missing.length === 0) continue;
+function migrateTmpName(table: string): string {
+  return `${table}__migrate_old`;
+}
 
-    const common = expected.filter((c) => actual.has(c));
-    const tmp = `${table}__migrate_old`;
+/**
+ * Recover from a rebuild that was interrupted (process killed) after a table was
+ * renamed to its `__migrate_old` temp but before the new table was created. In
+ * that state the table is missing under its real name while its data sits in the
+ * orphan; rename the orphan back so the next reconcile pass can retry cleanly.
+ */
+function recoverInterruptedRebuilds(db: ReturnType<typeof getDb>): void {
+  for (const table of MANAGED_TABLES) {
+    const tmp = migrateTmpName(table);
+    if (!tableExists(db, table) && tableExists(db, tmp)) {
+      db.execSync(`ALTER TABLE ${tmp} RENAME TO ${table}`);
+      log.warn('Recovered orphaned table from interrupted rebuild', { table });
+    }
+  }
+}
+
+function rebuildTable(
+  db: ReturnType<typeof getDb>,
+  table: string,
+  createStmt: string,
+  common: string[],
+  missing: string[],
+): void {
+  const tmp = migrateTmpName(table);
+  // Wrap the destructive rename → create → copy → drop in a transaction. SQLite
+  // DDL is transactional, so a crash mid-rebuild rolls back and leaves the
+  // original table intact — never orphaning the user's data.
+  db.execSync('BEGIN IMMEDIATE');
+  try {
     db.execSync(`DROP TABLE IF EXISTS ${tmp}`);
     db.execSync(`ALTER TABLE ${table} RENAME TO ${tmp}`);
     db.execSync(createStmt);
@@ -384,7 +403,29 @@ function reconcileSchema(db: ReturnType<typeof getDb>): void {
     }
     db.execSync(`DROP TABLE ${tmp}`);
     for (const idx of indexStmts(table)) db.execSync(idx);
+    db.execSync('COMMIT');
     log.info('Rebuilt drifted table', { table, missing });
+  } catch (err) {
+    db.execSync('ROLLBACK');
+    throw err;
+  }
+}
+
+function reconcileSchema(db: ReturnType<typeof getDb>): void {
+  recoverInterruptedRebuilds(db);
+  for (const table of MANAGED_TABLES) {
+    if (!tableExists(db, table)) continue;
+    const createStmt = createTableStmt(table);
+    if (!createStmt) continue;
+    const expected = declaredColumns(createStmt);
+    const actual = new Set(
+      db.getAllSync<{ name: string }>(`PRAGMA table_info(${table})`).map((c) => c.name),
+    );
+    const missing = expected.filter((c) => !actual.has(c));
+    if (missing.length === 0) continue;
+
+    const common = expected.filter((c) => actual.has(c));
+    rebuildTable(db, table, createStmt, common, missing);
   }
 }
 
