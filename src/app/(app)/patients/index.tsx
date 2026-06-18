@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { Button } from '@/design/components/Button';
@@ -25,7 +25,10 @@ export default function PatientsScreen() {
   const reload = useCallback(() => setItems(listPatients(query)), [query]);
   useFocusEffect(reload);
 
-  const withBalance = items.map((p) => ({ p, bal: patientBalance(p.id) }));
+  const withBalance = useMemo(
+    () => items.map((p) => ({ p, bal: patientBalance(p.id) })),
+    [items],
+  );
   const visible = withBalance.filter(({ bal }) =>
     filter === 'debtor' ? bal > 0 : filter === 'settled' ? bal <= 0 : true,
   );
@@ -36,7 +39,7 @@ export default function PatientsScreen() {
   ];
 
   return (
-    <Screen>
+    <Screen edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <Button title="بازگشت ›" kind="ghost" onPress={() => router.back()} />

@@ -61,6 +61,15 @@ describe('jalali month grid', () => {
     expect(days).toBe(31);
   });
 
+  it('maps each cell to the correct Gregorian date', () => {
+    // Farvardin 1403: day 1 == 2024-03-20, day 12 == 2024-03-31, day 13 == 2024-04-01.
+    const m = buildJalaliMonth(new Date('2024-03-20T10:00:00Z'));
+    const cell = (day: number) => m.cells.find((c) => c.day === day);
+    expect(isoToJalaliDate((cell(1)?.date as Date).toISOString())).toBe('1403/01/01');
+    expect(isoToJalaliDate((cell(12)?.date as Date).toISOString())).toBe('1403/01/12');
+    expect(isoToJalaliDate((cell(31)?.date as Date).toISOString())).toBe('1403/01/31');
+  });
+
   it('moves to the previous/next Jalali month', () => {
     const ref = new Date('2024-03-20T10:00:00Z'); // 1403/01
     const prev = buildJalaliMonth(addJalaliMonths(ref, -1));

@@ -59,7 +59,7 @@ export default function PaymentsScreen() {
   };
 
   return (
-    <Screen>
+    <Screen edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <Button title="بازگشت ›" kind="ghost" onPress={() => router.back()} />

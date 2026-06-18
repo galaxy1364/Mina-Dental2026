@@ -88,8 +88,10 @@ export function buildJalaliMonth(ref: Date): JalaliMonth {
   const cells: JalaliMonthCell[] = [];
   for (let i = 0; i < lead; i += 1) cells.push({ date: null, day: null, holiday: false });
   for (let d = 1; d <= days; d += 1) {
+    // `first` is the Gregorian date of Jalali day 1; offset from it (do NOT call
+    // setDate(d), which would set the Gregorian day-of-month to d).
     const date = new Date(first);
-    date.setDate(d);
+    date.setDate(first.getDate() + d - 1);
     date.setHours(0, 0, 0, 0);
     cells.push({ date, day: d, holiday: date.getDay() === 5 });
   }
