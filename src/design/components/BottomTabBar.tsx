@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePathname, useRouter } from 'expo-router';
 import { Icon, type IconName } from '../icons/Icon';
-import { colors, fonts, shadow, spacing } from '../tokens';
+import { colors, fonts, radius, shadow, spacing } from '../tokens';
 import { Text } from './Text';
 
 interface Tab {
@@ -42,19 +42,20 @@ export function BottomTabBar() {
               if (!active) router.replace(t.route as never);
             }}
           >
-            <Icon
-              name={t.icon}
-              size={24}
-              color={active ? colors.primary : colors.textMuted}
-              strokeWidth={active ? 2.3 : 1.9}
-            />
+            <View style={[styles.iconWrap, active && styles.iconWrapActive]}>
+              <Icon
+                name={t.icon}
+                size={23}
+                color={active ? colors.onPrimary : colors.textMuted}
+                strokeWidth={active ? 2.3 : 1.9}
+              />
+            </View>
             <Text
               variant="caption"
-              style={[styles.label, { color: active ? colors.primary : colors.textMuted }]}
+              style={[styles.label, { color: active ? colors.textPrimary : colors.textMuted }]}
             >
               {t.label}
             </Text>
-            {active ? <View style={styles.dot} /> : null}
           </Pressable>
         );
       })}
@@ -78,14 +79,14 @@ const styles = StyleSheet.create({
     ...shadow.card,
     shadowOffset: { width: 0, height: -4 },
   },
-  item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  label: { fontFamily: fonts.medium, fontSize: 11 },
-  dot: {
-    position: 'absolute',
-    bottom: -2,
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: colors.primary,
+  item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },
+  iconWrap: {
+    width: 46,
+    height: 32,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  iconWrapActive: { backgroundColor: colors.primary },
+  label: { fontFamily: fonts.medium, fontSize: 11 },
 });

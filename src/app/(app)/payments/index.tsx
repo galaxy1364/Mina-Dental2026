@@ -61,7 +61,7 @@ export default function PaymentsScreen() {
   return (
     <Screen edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.header}>
+      <View style={[styles.header, patientId ? styles.headerWithBack : styles.headerPlain]}>
         {patientId ? (
           <Button title="بازگشت ›" kind="ghost" onPress={() => router.back()} />
         ) : null}
@@ -113,11 +113,13 @@ export default function PaymentsScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row-reverse',
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
+  // Back button present: back at the left edge, title at the right (RTL).
+  headerWithBack: { flexDirection: 'row-reverse', justifyContent: 'space-between' },
+  // Title only: keep it right-anchored in the RTL context.
+  headerPlain: { flexDirection: 'row', justifyContent: 'flex-start' },
   actions: { marginVertical: spacing.md },
   list: { gap: spacing.md, paddingBottom: spacing.xl },
 });

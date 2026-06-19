@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   label: { fontFamily: fonts.medium, color: colors.textSecondary },
-  labelActive: { color: colors.textInverse },
+  labelActive: { color: colors.onPrimary },
   badge: {
     minWidth: 18,
     height: 18,
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
+  badgeActive: { backgroundColor: 'rgba(26,29,16,0.18)' },
   badgeText: { fontSize: 10, lineHeight: 14, color: colors.textSecondary },
-  badgeTextActive: { color: colors.textInverse },
+  badgeTextActive: { color: colors.onPrimary },
 });

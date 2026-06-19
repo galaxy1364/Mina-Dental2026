@@ -131,7 +131,7 @@ export default function CalendarScreen() {
                   </Text>
                   <View style={styles.dots}>
                     {cats.map((c) => (
-                      <View key={c} style={[styles.dot, { backgroundColor: isSelected ? '#fff' : CAT_COLOR[c] }]} />
+                      <View key={c} style={[styles.dot, { backgroundColor: isSelected ? colors.onPrimary : CAT_COLOR[c] }]} />
                     ))}
                   </View>
                 </View>
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   daySelected: { backgroundColor: colors.primary },
   dayToday: { backgroundColor: colors.primaryLight },
   dayNum: { color: colors.textPrimary },
-  daySelectedText: { color: colors.textInverse },
+  daySelectedText: { color: colors.onPrimary },
   dots: { flexDirection: 'row', gap: 2, height: 6 },
   dot: { width: 6, height: 6, borderRadius: 3 },
   legend: {

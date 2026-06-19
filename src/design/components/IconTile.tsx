@@ -1,11 +1,12 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon, type IconName } from '../icons/Icon';
 import { colors, radius, spacing } from '../tokens';
+import { withAlpha } from '@/lib/color';
 import { Text } from './Text';
 
 /**
- * A single colorful rounded-square section tile (Iranian super-app style):
- * a tinted squircle holding a white glyph, with a caption below.
+ * A single section tile in the Iranian banking "soft icon" style: a softly
+ * tinted squircle holding the hue-colored line glyph, with a caption below.
  */
 export function IconTile({
   label,
@@ -27,10 +28,10 @@ export function IconTile({
       <View
         style={[
           styles.tile,
-          { width: size, height: size, borderRadius: size * 0.3, backgroundColor: color, shadowColor: color },
+          { width: size, height: size, borderRadius: size * 0.32, backgroundColor: withAlpha(color, 0.14) },
         ]}
       >
-        <Icon name={icon} size={size * 0.5} color="#FFFFFF" strokeWidth={1.9} />
+        <Icon name={icon} size={size * 0.5} color={color} strokeWidth={2} />
         {badge ? (
           <View style={styles.badge}>
             <Text variant="caption" style={styles.badgeText}>
@@ -51,10 +52,6 @@ const styles = StyleSheet.create({
   tile: {
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 4,
   },
   label: { textAlign: 'center' },
   badge: {

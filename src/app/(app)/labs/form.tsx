@@ -94,7 +94,7 @@ export default function LabFormScreen() {
                   onPress={() => setType(t)}
                   style={[styles.chip, activeChip && styles.chipActive]}
                 >
-                  <Text variant="caption" tone={activeChip ? 'inverse' : 'secondary'}>
+                  <Text variant="caption" tone={activeChip ? 'onPrimary' : 'secondary'}>
                     {LAB_TYPE_LABELS[t]}
                   </Text>
                 </Pressable>

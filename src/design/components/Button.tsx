@@ -23,9 +23,16 @@ const BG: Record<Kind, string> = {
   ghost: 'transparent',
 };
 
+const TEXT_TONE = {
+  primary: 'onPrimary',
+  secondary: 'primary',
+  ghost: 'primary',
+  danger: 'inverse',
+} as const;
+
 export function Button({ title, kind = 'primary', loading, disabled, ...rest }: ButtonProps) {
   const isDisabled = disabled || loading;
-  const tone = kind === 'secondary' || kind === 'ghost' ? 'primary' : 'inverse';
+  const tone = TEXT_TONE[kind];
   return (
     <Pressable
       accessibilityRole="button"
@@ -41,7 +48,9 @@ export function Button({ title, kind = 'primary', loading, disabled, ...rest }: 
     >
       <View style={styles.content}>
         {loading ? (
-          <ActivityIndicator color={tone === 'inverse' ? colors.textInverse : colors.primary} />
+          <ActivityIndicator
+            color={kind === 'primary' ? colors.onPrimary : kind === 'danger' ? colors.textInverse : colors.primaryDark}
+          />
         ) : (
           <Text variant="button" tone={tone}>
             {title}
@@ -54,8 +63,8 @@ export function Button({ title, kind = 'primary', loading, disabled, ...rest }: 
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 50,
-    borderRadius: radius.md,
+    minHeight: 52,
+    borderRadius: radius.pill,
     paddingHorizontal: spacing.lg,
     justifyContent: 'center',
     alignItems: 'center',

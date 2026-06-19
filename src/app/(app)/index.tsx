@@ -79,7 +79,7 @@ export default function Dashboard() {
           </View>
         </View>
 
-        <LinearGradient colors={gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+        <LinearGradient colors={gradients.wallet} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
           <Text variant="caption" style={styles.heroLabel}>
             مانده مطالبات کلینیک
           </Text>
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     padding: spacing.xl,
     gap: spacing.xs,
-    ...shadow.card,
+    ...shadow.float,
   },
   heroLabel: { color: 'rgba(255,255,255,0.85)' },
   heroValue: { color: colors.textInverse, fontSize: 30, lineHeight: 42 },

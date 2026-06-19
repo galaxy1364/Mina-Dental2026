@@ -21,7 +21,7 @@ export function Chips<T extends string>({ options, value, labels, onChange }: Ch
             onPress={() => onChange(opt)}
             style={[styles.chip, active && styles.chipActive]}
           >
-            <Text variant="caption" tone={active ? 'inverse' : 'secondary'}>
+            <Text variant="caption" tone={active ? 'onPrimary' : 'secondary'}>
               {labels[opt]}
             </Text>
           </Pressable>
