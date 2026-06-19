@@ -1,7 +1,8 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Icon, type IconName } from '../icons/Icon';
 import { colors, radius, spacing } from '../tokens';
 import { withAlpha } from '@/lib/color';
+import { PressableScale } from '../motion';
 import { Text } from './Text';
 
 /**
@@ -24,7 +25,7 @@ export function IconTile({
   badge?: string;
 }) {
   return (
-    <Pressable style={[styles.wrap, { width: Math.max(78, size + 24) }]} onPress={onPress} hitSlop={4}>
+    <PressableScale style={[styles.wrap, { width: Math.max(78, size + 24) }]} onPress={onPress} hitSlop={4}>
       <View
         style={[
           styles.tile,
@@ -43,7 +44,7 @@ export function IconTile({
       <Text variant="caption" tone="secondary" style={styles.label} numberOfLines={1}>
         {label}
       </Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 

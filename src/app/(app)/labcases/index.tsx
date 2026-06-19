@@ -8,7 +8,7 @@ import { Pill } from '@/design/components/Pill';
 import { Screen } from '@/design/components/Screen';
 import { Text } from '@/design/components/Text';
 import { EmptyState } from '@/design/components/StateViews';
-import { spacing } from '@/design/tokens';
+import { spacing, tile } from '@/design/tokens';
 import type { Tone } from '@/design/tone';
 import {
   LAB_CASE_STATUS_LABELS,
@@ -93,6 +93,8 @@ export default function LabCasesScreen() {
             return (
               <ListRow
                 key={c.id}
+                icon="flask"
+                iconColor={tile.labcases}
                 title={`${c.title} — ${lab?.name ?? 'لابراتوار'}`}
                 subtitle={p ? fullName(p) : undefined}
                 meta={c.dueAt ? `تحویل: ${formatJalali(c.dueAt)}${overdue ? ' (معوق)' : ''}` : undefined}

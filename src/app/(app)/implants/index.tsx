@@ -8,7 +8,7 @@ import { Pill } from '@/design/components/Pill';
 import { Screen } from '@/design/components/Screen';
 import { Text } from '@/design/components/Text';
 import { EmptyState } from '@/design/components/StateViews';
-import { spacing } from '@/design/tokens';
+import { spacing, tile } from '@/design/tokens';
 import { listImplants, type Implant } from '@/features/implants/repository';
 import { fullName, getPatient } from '@/features/patients/repository';
 import { formatJalali } from '@/lib/jalali';
@@ -53,6 +53,8 @@ export default function ImplantsScreen() {
             return (
               <ListRow
                 key={i.id}
+                icon="implant"
+                iconColor={tile.implants}
                 title={`${i.brand}${i.system ? ` — ${i.system}` : ''}`}
                 subtitle={p ? fullName(p) : undefined}
                 meta={[

@@ -8,7 +8,7 @@ import { Pill } from '@/design/components/Pill';
 import { Screen } from '@/design/components/Screen';
 import { Text } from '@/design/components/Text';
 import { EmptyState } from '@/design/components/StateViews';
-import { spacing } from '@/design/tokens';
+import { spacing, tile } from '@/design/tokens';
 import type { Tone } from '@/design/tone';
 import {
   APPOINTMENT_STATUS_LABELS,
@@ -105,6 +105,8 @@ export default function AppointmentsScreen() {
             return (
               <ListRow
                 key={a.id}
+                icon="clock"
+                iconColor={tile.appointments}
                 title={`${toPersianDigits(isoToTime(a.startTime))} — ${p ? fullName(p) : 'بیمار'}`}
                 subtitle={doctor ?? undefined}
                 meta={a.unit ? `یونیت ${a.unit}` : undefined}

@@ -9,7 +9,7 @@ import { Pill } from '@/design/components/Pill';
 import { Screen } from '@/design/components/Screen';
 import { Text } from '@/design/components/Text';
 import { EmptyState } from '@/design/components/StateViews';
-import { spacing } from '@/design/tokens';
+import { spacing, tile } from '@/design/tokens';
 import { fullName, listPatients, type Patient } from '@/features/patients/repository';
 import { patientBalance } from '@/features/payments/repository';
 import { formatToman, toPersianDigits } from '@/lib/persian';
@@ -65,6 +65,8 @@ export default function PatientsScreen() {
         renderItem={({ item: { p: item, bal } }) => {
           return (
             <ListRow
+              icon="tooth"
+              iconColor={tile.patients}
               title={fullName(item)}
               subtitle={item.mobile ? toPersianDigits(item.mobile) : 'بدون موبایل'}
               meta={`پروندهٔ شمارهٔ ${toPersianDigits(item.fileNumber)}`}

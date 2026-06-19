@@ -9,7 +9,7 @@ import { Pill } from '@/design/components/Pill';
 import { Screen } from '@/design/components/Screen';
 import { Text } from '@/design/components/Text';
 import { EmptyState } from '@/design/components/StateViews';
-import { colors, spacing } from '@/design/tokens';
+import { colors, spacing, tile } from '@/design/tokens';
 import {
   PAYMENT_DIRECTION_LABELS,
   deletePayment,
@@ -92,6 +92,8 @@ export default function PaymentsScreen() {
             return (
               <ListRow
                 key={p.id}
+                icon="wallet"
+                iconColor={p.direction === 'payment' ? colors.success : tile.finance}
                 title={`${PAYMENT_DIRECTION_LABELS[p.direction]} — ${formatToman(p.amount)}`}
                 subtitle={!patientId && pt ? fullName(pt) : (p.description ?? undefined)}
                 meta={formatJalali(p.paidAt)}

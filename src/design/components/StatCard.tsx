@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { colors, radius, shadow, spacing } from '../tokens';
 import { TONE_COLORS, type Tone } from '../tone';
+import { PressableScale } from '../motion';
 import { Text } from './Text';
 
 interface StatCardProps {
@@ -16,10 +17,7 @@ interface StatCardProps {
 export function StatCard({ label, value, hint, tone = 'neutral', icon, onPress }: StatCardProps) {
   const t = TONE_COLORS[tone];
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && onPress ? styles.pressed : null]}
-    >
+    <PressableScale onPress={onPress} style={styles.card} disabled={!onPress}>
       <View style={styles.top}>
         <View style={[styles.iconWrap, { backgroundColor: t.bg }]}>
           <Text variant="subtitle" style={{ color: t.fg }}>
@@ -43,7 +41,7 @@ export function StatCard({ label, value, hint, tone = 'neutral', icon, onPress }
           {hint}
         </Text>
       ) : null}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -59,7 +57,6 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     ...shadow.card,
   },
-  pressed: { opacity: 0.85 },
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   iconWrap: {
     width: 40,

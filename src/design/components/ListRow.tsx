@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { colors, radius, shadow, spacing } from '../tokens';
+import { withAlpha } from '@/lib/color';
+import { Icon, type IconName } from '../icons/Icon';
+import { PressableScale } from '../motion';
 import { Text } from './Text';
 
 interface ListRowProps {
@@ -9,15 +12,36 @@ interface ListRowProps {
   meta?: string;
   right?: ReactNode;
   onPress?: () => void;
+  /** Optional leading icon, shown in a tinted squircle on the RIGHT (banking style). */
+  icon?: IconName;
+  /** Hue for the leading icon tile (defaults to brand lime). */
+  iconColor?: string;
+  /** Show the trailing chevron on the LEFT when the row is tappable. */
+  chevron?: boolean;
 }
 
-/** A tappable surface row used across list screens (RTL). */
-export function ListRow({ title, subtitle, meta, right, onPress }: ListRowProps) {
+/**
+ * Banking-style list row (RTL): a white rounded card with an optional tinted
+ * leading icon on the right, title/subtitle/meta stacked to its right, optional
+ * trailing content and a chevron on the left. Tapping scales the card.
+ */
+export function ListRow({
+  title,
+  subtitle,
+  meta,
+  right,
+  onPress,
+  icon,
+  iconColor = colors.primaryDark,
+  chevron = true,
+}: ListRowProps) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && onPress ? styles.pressed : null]}
-    >
+    <PressableScale onPress={onPress} style={styles.row} disabled={!onPress}>
+      {icon ? (
+        <View style={[styles.iconTile, { backgroundColor: withAlpha(iconColor, 0.14) }]}>
+          <Icon name={icon} size={22} color={iconColor} strokeWidth={2} />
+        </View>
+      ) : null}
       <View style={styles.texts}>
         <Text variant="body" tone="primary" style={styles.title}>
           {title}
@@ -34,24 +58,30 @@ export function ListRow({ title, subtitle, meta, right, onPress }: ListRowProps)
         ) : null}
       </View>
       {right ? <View style={styles.right}>{right}</View> : null}
-    </Pressable>
+      {onPress && chevron ? <Icon name="chevronL" size={18} color={colors.textMuted} /> : null}
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: spacing.md,
     ...shadow.card,
   },
-  pressed: { opacity: 0.85 },
+  iconTile: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   texts: { flex: 1, gap: spacing.xs },
   title: { textAlign: 'right' },
   right: { alignItems: 'flex-end', gap: spacing.xs },

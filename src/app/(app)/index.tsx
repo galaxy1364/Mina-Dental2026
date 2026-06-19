@@ -11,6 +11,7 @@ import { colors, gradients, radius, shadow, spacing, tile } from '@/design/token
 import { getSyncSnapshot } from '@/core/sync/syncEngine';
 import { computeClinicDashboard, type ClinicDashboard } from '@/features/journey/engine';
 import { useAuth } from '@/features/auth/useAuth';
+import { FadeInUp, useCountUp } from '@/design/motion';
 import { formatJalaliLong, nowIso } from '@/lib/jalali';
 import { formatToman, toPersianDigits } from '@/lib/persian';
 
@@ -83,19 +84,17 @@ export default function Dashboard() {
           <Text variant="caption" style={styles.heroLabel}>
             مانده مطالبات کلینیک
           </Text>
-          <Text variant="title" style={styles.heroValue}>
-            {formatToman(stats.outstanding)}
-          </Text>
+          <HeroBalance value={stats.outstanding} />
           <Text variant="caption" style={styles.heroDate}>
             {formatJalaliLong(now)}
           </Text>
 
           <View style={styles.heroStats}>
-            <HeroStat label="نوبت امروز" value={toPersianDigits(stats.todayAppointments)} />
+            <HeroStat label="نوبت امروز" value={stats.todayAppointments} />
             <View style={styles.heroDivider} />
-            <HeroStat label="بیماران" value={toPersianDigits(stats.patients)} />
+            <HeroStat label="بیماران" value={stats.patients} />
             <View style={styles.heroDivider} />
-            <HeroStat label="سفارش باز" value={toPersianDigits(stats.openLabCases)} />
+            <HeroStat label="سفارش باز" value={stats.openLabCases} />
           </View>
         </LinearGradient>
 
@@ -117,15 +116,16 @@ export default function Dashboard() {
           دسترسی سریع
         </Text>
         <View style={styles.grid}>
-          {links.map((l) => (
-            <IconTile
-              key={l.label}
-              label={l.label}
-              icon={l.icon}
-              color={l.color}
-              badge={l.badge?.()}
-              onPress={() => router.push(l.route as never)}
-            />
+          {links.map((l, i) => (
+            <FadeInUp key={l.label} index={i}>
+              <IconTile
+                label={l.label}
+                icon={l.icon}
+                color={l.color}
+                badge={l.badge?.()}
+                onPress={() => router.push(l.route as never)}
+              />
+            </FadeInUp>
           ))}
         </View>
       </ScrollView>
@@ -133,11 +133,21 @@ export default function Dashboard() {
   );
 }
 
-function HeroStat({ label, value }: { label: string; value: string }) {
+function HeroBalance({ value }: { value: number }) {
+  const animated = useCountUp(value);
+  return (
+    <Text variant="title" style={styles.heroValue}>
+      {formatToman(animated)}
+    </Text>
+  );
+}
+
+function HeroStat({ label, value }: { label: string; value: number }) {
+  const animated = useCountUp(value);
   return (
     <View style={styles.heroStat}>
       <Text variant="subtitle" style={styles.heroStatValue}>
-        {value}
+        {toPersianDigits(animated)}
       </Text>
       <Text variant="caption" style={styles.heroStatLabel}>
         {label}
