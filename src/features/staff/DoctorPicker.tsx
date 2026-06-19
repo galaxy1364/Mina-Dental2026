@@ -39,7 +39,7 @@ function Chip({ active, onPress, text }: { active: boolean; onPress: () => void;
 
 const styles = StyleSheet.create({
   label: { textAlign: 'right', marginBottom: spacing.sm },
-  chips: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: spacing.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

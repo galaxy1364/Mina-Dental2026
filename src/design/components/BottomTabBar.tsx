@@ -69,7 +69,7 @@ function isActive(pathname: string, tab: Tab): boolean {
 
 const styles = StyleSheet.create({
   bar: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     backgroundColor: colors.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,

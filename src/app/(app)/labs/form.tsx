@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   guard: { padding: spacing.lg },
   form: { gap: spacing.lg, paddingBottom: spacing.xl },
   label: { textAlign: 'right', marginBottom: spacing.sm },
-  chips: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: spacing.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -143,5 +143,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  switchRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
+  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 });

@@ -33,7 +33,7 @@ export function Logo({ size = 44, showWordmark = true }: { size?: number; showWo
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   mark: {
     backgroundColor: colors.primary,
     alignItems: 'center',

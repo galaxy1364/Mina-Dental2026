@@ -163,10 +163,10 @@ function roleLabel(role?: string | null): string {
 
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
-  header: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
-  headerRight: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.sm },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   statusPill: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: spacing.sm,
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   heroValue: { color: colors.textInverse, fontSize: 30, lineHeight: 42 },
   heroDate: { color: 'rgba(255,255,255,0.75)', marginTop: 2 },
   heroStats: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: spacing.lg,
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   heroStatLabel: { color: 'rgba(255,255,255,0.8)' },
   heroDivider: { width: StyleSheet.hairlineWidth, height: 28, backgroundColor: 'rgba(255,255,255,0.35)' },
   welcome: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: colors.surface,
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { marginTop: spacing.xs },
   grid: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     rowGap: spacing.lg,

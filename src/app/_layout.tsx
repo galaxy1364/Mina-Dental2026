@@ -13,11 +13,12 @@ import { boot } from '@/core/boot';
 import { AppProviders } from '@/providers/AppProviders';
 import { colors } from '@/design/tokens';
 
-// RTL is realized purely through explicit `flexDirection: 'row-reverse'` +
-// `textAlign: 'right'` layouts, NOT via native RTL. `I18nManager.forceRTL` is
-// unreliable in Expo Go (it only applies after a reload, so the layout direction
-// would oscillate between launches). Pin native RTL OFF so `row-reverse` always
-// means right-to-left deterministically across every launch.
+// RTL is realized via an explicit `direction: 'rtl'` layout context (set on the
+// `Screen` container and the app root view), NOT via native `I18nManager.forceRTL`
+// — which is unreliable in Expo Go (it only applies after a reload, so the layout
+// direction would oscillate between launches). Within an RTL context,
+// `flexDirection: 'row'` lays children out right-to-left. We pin native RTL OFF
+// so the result is deterministic across every launch.
 I18nManager.allowRTL(false);
 I18nManager.forceRTL(false);
 

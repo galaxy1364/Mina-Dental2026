@@ -106,7 +106,7 @@ export default function LabsListScreen() {
 const styles = StyleSheet.create({
   header: { gap: spacing.xs, marginBottom: spacing.md },
   list: { gap: spacing.md, paddingBottom: spacing.xl },
-  rowBetween: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
-  badgeRow: { flexDirection: 'row-reverse', marginTop: spacing.sm },
-  actions: { flexDirection: 'row-reverse', gap: spacing.lg, marginTop: spacing.md },
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  badgeRow: { flexDirection: 'row', marginTop: spacing.sm },
+  actions: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.md },
 });

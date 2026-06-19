@@ -181,8 +181,8 @@ function roleLabel(role?: string | null): string {
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
   cardTitle: { marginBottom: spacing.md },
-  grid: { flexDirection: 'row-reverse', flexWrap: 'wrap', justifyContent: 'flex-start', gap: spacing.md, rowGap: spacing.lg },
-  accountRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: spacing.md, rowGap: spacing.lg },
+  accountRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   roleChip: {
     backgroundColor: colors.primaryLight,
     paddingHorizontal: spacing.md,
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   row: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: spacing.md,

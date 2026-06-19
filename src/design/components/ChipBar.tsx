@@ -16,7 +16,7 @@ interface ChipBarProps<T extends string> {
 
 /**
  * Right-aligned, horizontally scrollable filter chip bar. This app realizes RTL
- * via `flexDirection: 'row-reverse'` throughout (the same convention used by
+ * via `flexDirection: 'row'` throughout (the same convention used by
  * every other screen), so the first chip sits at the right edge and overflow
  * scrolls toward the left; `direction: 'rtl'` right-anchors the scroll offset so
  * the first chips are visible initially. Shared by every module screen.
@@ -60,9 +60,9 @@ function toFa(n: number): string {
 
 const styles = StyleSheet.create({
   scroll: { flexGrow: 0, direction: 'rtl' },
-  content: { flexDirection: 'row-reverse', gap: spacing.sm, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg },
+  content: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg },
   chip: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: spacing.md,

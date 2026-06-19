@@ -98,12 +98,12 @@ export default function ImplantFormScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
   form: { gap: spacing.lg, paddingBottom: spacing.xl },
-  two: { flexDirection: 'row-reverse', gap: spacing.md },
+  two: { flexDirection: 'row', gap: spacing.md },
   flex: { flex: 1 },
 });

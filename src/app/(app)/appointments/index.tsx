@@ -121,15 +121,15 @@ export default function AppointmentsScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
-  dateNav: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+  dateNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   dateCenter: { alignItems: 'center', gap: spacing.xs },
   actions: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginVertical: spacing.md,

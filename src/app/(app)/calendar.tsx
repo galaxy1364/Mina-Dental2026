@@ -186,7 +186,7 @@ function LegendItem({ color, label }: { color: string; label: string }) {
 
 const styles = StyleSheet.create({
   headerBar: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
@@ -195,11 +195,11 @@ const styles = StyleSheet.create({
   navBtn: { padding: spacing.sm },
   monthLabel: { alignItems: 'center' },
   content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
-  weekRow: { flexDirection: 'row-reverse', marginTop: spacing.sm },
+  weekRow: { flexDirection: 'row', marginTop: spacing.sm },
   weekCell: { flex: 1, alignItems: 'center' },
   weekText: { fontFamily: fonts.medium, color: colors.textMuted },
   holidayText: { color: colors.danger },
-  grid: { flexDirection: 'row-reverse', flexWrap: 'wrap' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: `${100 / 7}%`, aspectRatio: 1, padding: 3 },
   dayInner: {
     flex: 1,
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   dots: { flexDirection: 'row', gap: 2, height: 6 },
   dot: { width: 6, height: 6, borderRadius: 3 },
   legend: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.lg,
     justifyContent: 'center',
@@ -224,11 +224,11 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     ...shadow.card,
   },
-  legendItem: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   detailTitle: { marginTop: spacing.sm },
   eventList: { gap: spacing.sm },
   eventRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     backgroundColor: colors.surface,

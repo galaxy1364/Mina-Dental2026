@@ -32,7 +32,7 @@ export function Chips<T extends string>({ options, value, labels, onChange }: Ch
 }
 
 const styles = StyleSheet.create({
-  chips: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: spacing.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
