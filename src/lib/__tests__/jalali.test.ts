@@ -76,4 +76,31 @@ describe('jalali month grid', () => {
     const next = buildJalaliMonth(addJalaliMonths(ref, 1));
     expect(prev.monthName).not.toBe(next.monthName);
   });
+
+  it('exposes the Jalali year/month and Persian month name', () => {
+    const m = buildJalaliMonth(new Date('2024-03-20T10:00:00Z'));
+    expect(m.jy).toBe(1403);
+    expect(m.jm).toBe(1);
+    expect(m.monthName).toBe('فروردین');
+  });
+
+  it('crosses the year boundary correctly (Esfand → Farvardin)', () => {
+    // 1402/12 has 29 days; stepping +1 month lands in 1403/01.
+    const esfand = new Date('2024-03-01T10:00:00Z'); // ~1402/12/11
+    const m0 = buildJalaliMonth(esfand);
+    expect(m0.jy).toBe(1402);
+    expect(m0.jm).toBe(12);
+    const m1 = buildJalaliMonth(addJalaliMonths(esfand, 1));
+    expect(m1.jy).toBe(1403);
+    expect(m1.jm).toBe(1);
+  });
+
+  it('marks Nowruz (1/1) and the Friday weekly holiday with names', () => {
+    const m = buildJalaliMonth(new Date('2024-03-20T10:00:00Z'));
+    const nowruz = m.cells.find((c) => c.day === 1);
+    expect(nowruz?.holiday).toBe(true);
+    expect(nowruz?.holidayName).toBe('نوروز');
+    const friday = m.cells.find((c) => c.date?.getDay() === 5 && c.holidayName === 'جمعه');
+    expect(friday).toBeDefined();
+  });
 });

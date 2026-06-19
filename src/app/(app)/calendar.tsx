@@ -70,6 +70,10 @@ export default function CalendarScreen() {
     (e) => filter === 'all' || e.category === filter,
   );
 
+  const selectedHoliday = month.cells.find(
+    (c) => c.date && dayKey(c.date) === selectedKey,
+  )?.holidayName;
+
   return (
     <Screen edges={['top']} padded={false}>
       <View style={styles.headerBar}>
@@ -142,6 +146,15 @@ export default function CalendarScreen() {
           <LegendItem color={CAT_COLOR.payment} label="پرداخت" />
           <LegendItem color={colors.danger} label="تعطیل" />
         </View>
+
+        {selectedHoliday && (
+          <View style={styles.holidayBanner}>
+            <View style={[styles.dot, { backgroundColor: colors.danger }]} />
+            <Text variant="caption" style={styles.holidayBannerText}>
+              {selectedHoliday === 'جمعه' ? 'تعطیل رسمی (جمعه)' : `تعطیل رسمی: ${selectedHoliday}`}
+            </Text>
+          </View>
+        )}
 
         <Text variant="subtitle" style={styles.detailTitle}>
           رویدادهای روز
@@ -225,6 +238,16 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  holidayBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  holidayBannerText: { color: colors.danger, fontFamily: fonts.medium },
   detailTitle: { marginTop: spacing.sm },
   eventList: { gap: spacing.sm },
   eventRow: {

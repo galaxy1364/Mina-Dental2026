@@ -3,13 +3,35 @@
  * stores Gregorian ISO timestamps; conversion to Jalali happens at display time.
  */
 import {
-  addMonths,
   format as formatJalaliFn,
-  getDaysInMonth,
   parse as parseJalaliFn,
-  startOfMonth,
 } from 'date-fns-jalali';
+import { jalaaliMonthLength, toGregorian, toJalaali } from 'jalaali-js';
+import { jalaliHolidayName } from './holidays';
 import { toEnglishDigits, toPersianDigits } from './persian';
+
+/** Persian (Jalali) month names, Farvardin-first. */
+export const JALALI_MONTHS = [
+  'فروردین',
+  'اردیبهشت',
+  'خرداد',
+  'تیر',
+  'مرداد',
+  'شهریور',
+  'مهر',
+  'آبان',
+  'آذر',
+  'دی',
+  'بهمن',
+  'اسفند',
+] as const;
+
+/** Build a local-midnight Gregorian Date from a jalaali-js conversion result. */
+function gregorianDate(gy: number, gm: number, gd: number): Date {
+  const d = new Date(gy, gm - 1, gd);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
 /** Format a Date/ISO string as a Jalali string with Persian digits. */
 export function formatJalali(date: Date | string | number, pattern = 'yyyy/MM/dd'): string {
@@ -59,47 +81,67 @@ export interface JalaliMonthCell {
   date: Date | null;
   /** Jalali day-of-month (1..31), or null for blanks. */
   day: number | null;
-  /** True for Fridays (official weekly holiday). */
+  /** True for any official holiday (Fridays + fixed national holidays). */
   holiday: boolean;
+  /** Holiday name when `holiday` is true, otherwise null. */
+  holidayName: string | null;
 }
 
 export interface JalaliMonth {
   year: string;
   monthName: string;
-  /** A reference Date inside this Jalali month. */
+  /** Jalali year/month numbers of this view. */
+  jy: number;
+  jm: number;
+  /** A reference Date inside this Jalali month (its first day). */
   cursor: Date;
   cells: JalaliMonthCell[];
 }
 
-/** Shift a reference Date by whole Jalali months. */
+const BLANK: JalaliMonthCell = { date: null, day: null, holiday: false, holidayName: null };
+
+/**
+ * Shift a reference Date by whole Jalali months, computed in Jalali space (via
+ * `jalaali-js`) so month lengths and year boundaries are always exact.
+ */
 export function addJalaliMonths(date: Date, amount: number): Date {
-  return addMonths(date, amount);
+  const { jy, jm, jd } = toJalaali(date.getFullYear(), date.getMonth() + 1, date.getDate());
+  const total = jy * 12 + (jm - 1) + amount;
+  const ny = Math.floor(total / 12);
+  const nm = (total % 12) + 1;
+  const nd = Math.min(jd, jalaaliMonthLength(ny, nm));
+  const g = toGregorian(ny, nm, nd);
+  return gregorianDate(g.gy, g.gm, g.gd);
 }
 
 /**
  * Build a 6×7 month matrix (Saturday-first) for the Jalali month containing
- * `ref`. Leading/trailing cells are blank so the grid is always rectangular.
+ * `ref`, using `jalaali-js` for exact day-by-day Gregorian conversion (no
+ * fragile Gregorian offset arithmetic). Leading/trailing cells are blank so the
+ * grid is always rectangular.
  */
 export function buildJalaliMonth(ref: Date): JalaliMonth {
-  const first = startOfMonth(ref);
-  const days = getDaysInMonth(ref);
+  const { jy, jm } = toJalaali(ref.getFullYear(), ref.getMonth() + 1, ref.getDate());
+  const days = jalaaliMonthLength(jy, jm);
+  const g1 = toGregorian(jy, jm, 1);
+  const first = gregorianDate(g1.gy, g1.gm, g1.gd);
   // JS getDay(): 0=Sun..6=Sat. Jalali week starts Saturday → Saturday = col 0.
   const lead = (first.getDay() + 1) % 7;
   const cells: JalaliMonthCell[] = [];
-  for (let i = 0; i < lead; i += 1) cells.push({ date: null, day: null, holiday: false });
+  for (let i = 0; i < lead; i += 1) cells.push(BLANK);
   for (let d = 1; d <= days; d += 1) {
-    // `first` is the Gregorian date of Jalali day 1; offset from it (do NOT call
-    // setDate(d), which would set the Gregorian day-of-month to d).
-    const date = new Date(first);
-    date.setDate(first.getDate() + d - 1);
-    date.setHours(0, 0, 0, 0);
-    cells.push({ date, day: d, holiday: date.getDay() === 5 });
+    const g = toGregorian(jy, jm, d);
+    const date = gregorianDate(g.gy, g.gm, g.gd);
+    const holidayName = jalaliHolidayName(jm, d, date.getDay());
+    cells.push({ date, day: d, holiday: holidayName !== null, holidayName });
   }
-  while (cells.length % 7 !== 0) cells.push({ date: null, day: null, holiday: false });
-  while (cells.length < 42) cells.push({ date: null, day: null, holiday: false });
+  while (cells.length % 7 !== 0) cells.push(BLANK);
+  while (cells.length < 42) cells.push(BLANK);
   return {
-    year: toPersianDigits(formatJalaliFn(first, 'yyyy')),
-    monthName: formatJalaliFn(first, 'MMMM'),
+    year: toPersianDigits(String(jy)),
+    monthName: JALALI_MONTHS[jm - 1],
+    jy,
+    jm,
     cursor: first,
     cells,
   };
