@@ -31,7 +31,8 @@ export function BottomTabBar() {
   if (!VISIBLE_ON.has(pathname)) return null;
 
   return (
-    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
+    <View style={[styles.dockWrap, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+      <View style={styles.bar}>
       {TABS.map((t) => {
         const active = isActive(pathname, t);
         return (
@@ -59,6 +60,7 @@ export function BottomTabBar() {
           </Pressable>
         );
       })}
+      </View>
     </View>
   );
 }
@@ -69,15 +71,20 @@ function isActive(pathname: string, tab: Tab): boolean {
 }
 
 const styles = StyleSheet.create({
+  dockWrap: {
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.background,
+  },
   bar: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    paddingTop: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.sm,
-    ...shadow.card,
-    shadowOffset: { width: 0, height: -4 },
+    marginBottom: spacing.xs,
+    ...shadow.float,
   },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },
   iconWrap: {
@@ -87,6 +94,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrapActive: { backgroundColor: colors.primary },
+  iconWrapActive: { backgroundColor: colors.primary, ...shadow.glow },
   label: { fontFamily: fonts.medium, fontSize: 11 },
 });

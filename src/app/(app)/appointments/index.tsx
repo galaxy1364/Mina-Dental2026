@@ -105,7 +105,7 @@ export default function AppointmentsScreen() {
             return (
               <ListRow
                 key={a.id}
-                icon="clock"
+                icon="appointment"
                 iconColor={tile.appointments}
                 title={`${toPersianDigits(isoToTime(a.startTime))} — ${p ? fullName(p) : 'بیمار'}`}
                 subtitle={doctor ?? undefined}

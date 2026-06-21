@@ -7,6 +7,7 @@ import Svg, { Circle, Line, Path, Polyline, Rect } from 'react-native-svg';
 export type IconName =
   | 'home'
   | 'calendar'
+  | 'appointment'
   | 'clock'
   | 'tooth'
   | 'flask'
@@ -61,10 +62,25 @@ function glyph(name: IconName, s: object, color: string) {
     case 'calendar':
       return (
         <>
-          <Rect x="3.5" y="5" width="17" height="15" rx="3" {...s} />
+          <Rect x="3.5" y="5" width="17" height="15" rx="3.5" {...s} />
           <Line x1="3.5" y1="9.5" x2="20.5" y2="9.5" {...s} />
-          <Line x1="8" y1="3" x2="8" y2="6.5" {...s} />
-          <Line x1="16" y1="3" x2="16" y2="6.5" {...s} />
+          <Line x1="8" y1="2.8" x2="8" y2="6.5" {...s} />
+          <Line x1="16" y1="2.8" x2="16" y2="6.5" {...s} />
+          <Rect x="13.7" y="12.3" width="3.6" height="3.6" rx="1.1" fill={color} stroke="none" />
+          <Line x1="6.7" y1="13" x2="9.3" y2="13" {...s} />
+          <Line x1="6.7" y1="16.6" x2="9.3" y2="16.6" {...s} />
+        </>
+      );
+    case 'appointment':
+      return (
+        <>
+          <Path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5V12" {...s} />
+          <Path d="M20 12v0M13.5 20H6.5A2.5 2.5 0 0 1 4 17.5V7.5" {...s} />
+          <Line x1="4" y1="9.5" x2="20" y2="9.5" {...s} />
+          <Line x1="8" y1="2.8" x2="8" y2="6.5" {...s} />
+          <Line x1="16" y1="2.8" x2="16" y2="6.5" {...s} />
+          <Circle cx="16.5" cy="16.5" r="4" {...s} />
+          <Polyline points="16.5 14.6 16.5 16.5 18 17.6" {...s} />
         </>
       );
     case 'clock':
@@ -91,10 +107,12 @@ function glyph(name: IconName, s: object, color: string) {
     case 'implant':
       return (
         <>
-          <Path d="M12 3.5 14.5 6h-5L12 3.5Z" {...s} />
-          <Line x1="12" y1="6" x2="12" y2="9" {...s} />
-          <Path d="M8.5 9h7l-1 3h-5l-1-3Z" {...s} />
-          <Path d="M9.5 12 12 20.5 14.5 12" {...s} />
+          <Path d="M8 4h8a1.5 1.5 0 0 1 1.5 1.5V7h-11V5.5A1.5 1.5 0 0 1 8 4Z" {...s} />
+          <Polyline points="7.6 8.6 12 10.1 16.4 8.6" {...s} />
+          <Polyline points="8.1 11 12 12.4 15.9 11" {...s} />
+          <Polyline points="8.7 13.4 12 14.7 15.3 13.4" {...s} />
+          <Polyline points="9.5 15.8 12 17 14.5 15.8" {...s} />
+          <Polyline points="10.7 18.2 12 19.6 13.3 18.2" {...s} />
         </>
       );
     case 'wallet':

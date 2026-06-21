@@ -2,79 +2,88 @@
  * Design tokens — single source of truth for color, spacing, radius, typography.
  * No screen may hardcode colors/fonts; everything references these tokens.
  *
- * Brand foundation: Iranian banking super-app standard (Bank Mehr / Qbank /
- * Banket). Signature = bright "lime" green used as the action/accent color
- * (gradient headers, primary buttons, active tab, selected states), paired with
- * a near-black "ink" wallet/balance card and a calm light canvas. Lime always
- * carries DARK text (`onPrimary`); never white-on-lime.
- * Persian-first, RTL, Vazirmatn typeface.
+ * Visual foundation (LOCKED V1.17): owner-approved "V0 dashboard" direction —
+ * a dark, luxury, clinical dashboard. Deep petrol / slate green-black canvas,
+ * luminous TURQUOISE/TEAL primary action, clinical VIOLET accent, translucent
+ * "glass" cards with soft borders and restrained teal glow, premium rounded
+ * geometry, bold Persian numeric hierarchy. Banking apps (Bank Mehr / Qbank /
+ * Banket) remain the STRUCTURAL reference (cards, dock, chips, list rows); the
+ * palette is the dark teal-glass system locked in docs/specs/governance
+ * (219/220/222). Teal `primary` is a fill; it always carries dark `onPrimary`
+ * text. Persian-first, RTL, Vazirmatn typeface.
  */
 
 export const colors = {
-  // Lime brand (Qbank/Bank Mehr). `primary` is a fill; put `onPrimary` text on it.
-  primary: '#C2E812',
-  primaryDark: '#5E7A00', // deep lime — readable as text/icon on light, and pressed
-  primaryLight: '#EEF8C0', // light lime tint — soft backgrounds, chips, today
-  primarySoft: '#EEF8C0',
-  onPrimary: '#1A1D10', // dark ink for text/icons sitting on `primary`
+  // Luminous turquoise brand. `primary` is a fill; put `onPrimary` text on it.
+  primary: '#22D3C5',
+  primaryDark: '#5BEADD', // bright teal — readable as text/icon on the dark canvas
+  primaryLight: '#0E3A3B', // dark teal tint — soft backgrounds, chips, today
+  primarySoft: '#0E3A3B',
+  onPrimary: '#04181B', // deep petrol ink for text/icons sitting on `primary`
 
-  // Near-black ink for the premium wallet/balance card and strong surfaces.
-  ink: '#16170F',
+  // Clinical violet secondary accent (sessions / special states).
+  secondary: '#9A8CF7',
+  secondarySoft: '#221F3D',
 
-  background: '#F4F5F1',
-  surface: '#FFFFFF',
-  surfaceAlt: '#F0F1EB',
+  // Premium near-black petrol for the wallet/balance card and strong surfaces.
+  ink: '#0B2227',
 
-  textPrimary: '#15170F',
-  textSecondary: '#5B5F52',
-  textMuted: '#9AA08C',
+  // Deep petrol / clinic black-green canvas + translucent glass surfaces.
+  background: '#08171B',
+  surface: '#102A30', // glass card
+  surfaceAlt: '#16363D', // elevated glass
+
+  textPrimary: '#EAF6F4',
+  textSecondary: '#9BB2BA',
+  textMuted: '#647C84',
   textInverse: '#FFFFFF',
 
-  border: '#E8EAE0',
-  borderStrong: '#D6D9CC',
+  border: '#1E3A41', // low-contrast glass border
+  borderStrong: '#2C4F57',
 
-  success: '#1FA463',
-  warning: '#E08A00',
-  danger: '#E5484D',
-  info: '#2D7FF9',
-  gold: '#E2B100', // طلا / premium accents (gold investment card)
+  success: '#34D399',
+  warning: '#FBBF24',
+  danger: '#FB6E73',
+  info: '#38BDF8',
+  gold: '#F2C14E', // طلا / premium accents
 
   // status / sync semantics
-  offline: '#8A8F7E',
-  pendingSync: '#E08A00',
-  synced: '#1FA463',
-  conflict: '#E5484D',
+  offline: '#647C84',
+  pendingSync: '#FBBF24',
+  synced: '#34D399',
+  conflict: '#FB6E73',
 } as const;
 
 /**
  * Section hues for the home/services icon grid. Tiles render as a soft tint of
- * the hue holding the hue-colored glyph (banking "soft icon" style), so these
- * are mid-tone colors chosen to read on a ~14% tint.
+ * the hue holding the hue-colored glyph (banking "soft icon" style). On the dark
+ * canvas these are bright mid-tones chosen to read both as a ~14% tint and as a
+ * full-strength glyph.
  */
 export const tile = {
-  patients: '#2BB673',
-  appointments: '#3B82F6',
-  calendar: '#EC4899',
-  labcases: '#F59E0B',
-  implants: '#8B5CF6',
-  finance: '#1FA463',
-  inventory: '#0EA5E9',
-  staff: '#EF4444',
-  labs: '#14B8A6',
-  reports: '#64748B',
-  rent: '#D946EF',
-  dentalChart: '#0891B2',
-  gold: '#E2B100',
+  patients: '#34D399',
+  appointments: '#38BDF8',
+  calendar: '#F472B6',
+  labcases: '#FBBF24',
+  implants: '#A78BFA',
+  finance: '#34D399',
+  inventory: '#22D3EE',
+  staff: '#FB7185',
+  labs: '#2DD4BF',
+  reports: '#94A3B8',
+  rent: '#E879F9',
+  dentalChart: '#22D3EE',
+  gold: '#F2C14E',
 } as const;
 
 export const gradients = {
-  /** Lime hero band (Qbank header). Use DARK text on this. */
-  brand: ['#D7F23E', '#B8E000'] as const,
-  /** Premium near-black balance/wallet card (Banket). Use WHITE text on this. */
-  wallet: ['#2A2F1E', '#14160E'] as const,
-  finance: ['#1FA463', '#27C46E'] as const,
+  /** Luminous teal hero band. Use DARK text on this. */
+  brand: ['#2DE3D3', '#15B7AB'] as const,
+  /** Premium petrol-glass balance/wallet card. Use WHITE text on this. */
+  wallet: ['#15363C', '#0A1F24'] as const,
+  finance: ['#10B981', '#34D399'] as const,
   gold: ['#F2C94C', '#E2B100'] as const,
-  violet: ['#6D28D9', '#8B5CF6'] as const,
+  violet: ['#7C6FF0', '#9A8CF7'] as const,
 };
 
 export const spacing = {
@@ -90,8 +99,8 @@ export const radius = {
   sm: 8,
   md: 12,
   lg: 16,
-  card: 20, // banking cards use generous rounding
-  xl: 24,
+  card: 22, // glass cards use generous rounding
+  xl: 26,
   pill: 999,
 } as const;
 
@@ -112,19 +121,27 @@ export const fontSize = {
 
 export const shadow = {
   card: {
-    shadowColor: '#1A1D10',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    shadowColor: '#000000',
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   /** Stronger float for the wallet card / sheets. */
   float: {
-    shadowColor: '#1A1D10',
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8,
+    shadowColor: '#000000',
+    shadowOpacity: 0.5,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 10,
+  },
+  /** Restrained teal glow for primary/active elements. */
+  glow: {
+    shadowColor: '#22D3C5',
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
   },
 } as const;
 

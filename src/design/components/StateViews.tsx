@@ -1,5 +1,6 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { colors, radius, spacing } from '../tokens';
+import { withAlpha } from '@/lib/color';
 import { Button } from './Button';
 import { Text } from './Text';
 
@@ -65,9 +66,9 @@ type BadgeTone = 'savedLocally' | 'pendingSync' | 'conflict' | 'synced' | 'offli
 
 const BADGE: Record<BadgeTone, { bg: string; fg: string; label: string }> = {
   savedLocally: { bg: colors.primaryLight, fg: colors.primaryDark, label: 'ذخیره‌شده محلی' },
-  pendingSync: { bg: '#FEF3C7', fg: colors.pendingSync, label: 'در صف همگام‌سازی' },
-  conflict: { bg: '#FEE2E2', fg: colors.conflict, label: 'تعارض داده' },
-  synced: { bg: '#DCFCE7', fg: colors.synced, label: 'همگام شد' },
+  pendingSync: { bg: withAlpha(colors.pendingSync, 0.16), fg: colors.pendingSync, label: 'در صف همگام‌سازی' },
+  conflict: { bg: withAlpha(colors.conflict, 0.16), fg: colors.conflict, label: 'تعارض داده' },
+  synced: { bg: withAlpha(colors.synced, 0.16), fg: colors.synced, label: 'همگام شد' },
   offline: { bg: colors.surfaceAlt, fg: colors.offline, label: 'آفلاین' },
 };
 

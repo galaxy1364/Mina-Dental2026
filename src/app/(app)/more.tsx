@@ -5,6 +5,7 @@ import { eq, sql } from 'drizzle-orm';
 import { Button } from '@/design/components/Button';
 import { Card } from '@/design/components/Card';
 import { IconTile } from '@/design/components/IconTile';
+import { FadeInUp } from '@/design/motion';
 import { Screen } from '@/design/components/Screen';
 import { StatusBadge } from '@/design/components/StateViews';
 import { Text } from '@/design/components/Text';
@@ -48,7 +49,7 @@ interface Section {
 
 const SECTIONS: Section[] = [
   { label: 'بیماران', icon: 'tooth', color: tile.patients, route: '/(app)/patients' },
-  { label: 'نوبت‌دهی', icon: 'clock', color: tile.appointments, route: '/(app)/appointments' },
+  { label: 'نوبت‌دهی', icon: 'appointment', color: tile.appointments, route: '/(app)/appointments' },
   { label: 'تقویم', icon: 'calendar', color: tile.calendar, route: '/(app)/calendar' },
   { label: 'لابراتوار', icon: 'flask', color: tile.labcases, route: '/(app)/labcases' },
   { label: 'ایمپلنت', icon: 'implant', color: tile.implants, route: '/(app)/implants' },
@@ -75,15 +76,16 @@ export default function MoreScreen() {
             بخش‌ها
           </Text>
           <View style={styles.grid}>
-            {SECTIONS.map((s) => (
-              <IconTile
-                key={s.label}
-                label={s.label}
-                icon={s.icon}
-                color={s.color}
-                size={76}
-                onPress={() => router.push(s.route as never)}
-              />
+            {SECTIONS.map((s, i) => (
+              <FadeInUp key={s.label} index={i} style={styles.cell}>
+                <IconTile
+                  label={s.label}
+                  icon={s.icon}
+                  color={s.color}
+                  size={58}
+                  onPress={() => router.push(s.route as never)}
+                />
+              </FadeInUp>
             ))}
           </View>
         </Card>
@@ -181,7 +183,8 @@ function roleLabel(role?: string | null): string {
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
   cardTitle: { marginBottom: spacing.md },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: spacing.md, rowGap: spacing.lg },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.lg },
+  cell: { width: '25%' },
   accountRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   roleChip: {
     backgroundColor: colors.primaryLight,

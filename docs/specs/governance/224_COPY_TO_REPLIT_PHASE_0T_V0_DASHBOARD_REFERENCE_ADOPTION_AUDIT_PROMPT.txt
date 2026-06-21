@@ -1,0 +1,41 @@
+PHASE_0T — V0 DASHBOARD VISUAL REFERENCE ADOPTION AUDIT ONLY
+
+You are the EXECUTOR/AUDITOR only. Do not code. Do not install packages. Do not run build. Do not modify repo. Do not import V0 source.
+
+Read these files first:
+- README_START_HERE.md
+- STATUS.md
+- RESUME_STATE.md
+- 173_UNIVERSAL_FORBIDDEN_ACTIONS_REGISTRY.md
+- 212_UNIFIED_FOUNDATION_NO_RANDOM_SCREEN_STYLE_PROTOCOL.md
+- 219_OWNER_APPROVED_V0_DASHBOARD_VISUAL_REFERENCE_AUDIT.md
+- 220_V0_DASHBOARD_DESIGN_TOKEN_EXTRACTION.md
+- 221_V0_DESIGN_ADOPTION_DECISION_AND_PURCHASE_GUIDE.md
+- 222_DASHBOARD_VISUAL_FOUNDATION_LOCK_FOR_PHASE1.md
+- 223_V0_SOURCE_QUARANTINE_AND_REWRITE_PROTOCOL.md
+
+Task:
+Verify that the owner-approved V0 dashboard ZIP has been treated only as visual reference and not as production source.
+
+Return exactly:
+BATCH_ID: PHASE_0T_V0_DASHBOARD_REFERENCE_ADOPTION_AUDIT
+STATUS: READONLY_AUDIT_ONLY
+FILES_FOUND:
+FILES_MISSING:
+VISUAL_REFERENCE_LOCK_STATUS:
+DIRECT_IMPORT_FORBIDDEN_STATUS:
+PHASE1_VISUAL_DIRECTION_READY: YES/NO
+BLOCKERS:
+NEXT_ALLOWED_STEP:
+
+Forbidden:
+- code generation
+- package install
+- schema change
+- V0 source import
+- HTML/CSS direct copy
+- WebView production
+- build
+- Expo run
+- EAS
+- secrets

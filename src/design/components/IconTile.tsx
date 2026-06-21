@@ -25,7 +25,7 @@ export function IconTile({
   badge?: string;
 }) {
   return (
-    <PressableScale style={[styles.wrap, { width: Math.max(78, size + 24) }]} onPress={onPress} hitSlop={4}>
+    <PressableScale style={styles.wrap} onPress={onPress} hitSlop={4} scaleTo={0.9}>
       <View
         style={[
           styles.tile,
@@ -49,7 +49,7 @@ export function IconTile({
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', gap: spacing.xs },
+  wrap: { alignItems: 'center', gap: spacing.sm, width: '100%' },
   tile: {
     alignItems: 'center',
     justifyContent: 'center',

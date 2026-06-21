@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   crown: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.textInverse,
     borderTopLeftRadius: radius.pill,
     borderTopRightRadius: radius.pill,
     borderBottomLeftRadius: radius.sm,

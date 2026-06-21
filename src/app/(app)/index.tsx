@@ -46,7 +46,7 @@ export default function Dashboard() {
 
   const links: QuickLink[] = [
     { label: 'بیماران', icon: 'tooth', color: tile.patients, route: '/(app)/patients' },
-    { label: 'نوبت‌دهی', icon: 'clock', color: tile.appointments, route: '/(app)/appointments' },
+    { label: 'نوبت‌دهی', icon: 'appointment', color: tile.appointments, route: '/(app)/appointments' },
     { label: 'تقویم', icon: 'calendar', color: tile.calendar, route: '/(app)/calendar' },
     {
       label: 'لابراتوار',
@@ -117,11 +117,12 @@ export default function Dashboard() {
         </Text>
         <View style={styles.grid}>
           {links.map((l, i) => (
-            <FadeInUp key={l.label} index={i}>
+            <FadeInUp key={l.label} index={i} style={styles.cell}>
               <IconTile
                 label={l.label}
                 icon={l.icon}
                 color={l.color}
+                size={58}
                 badge={l.badge?.()}
                 onPress={() => router.push(l.route as never)}
               />
@@ -234,7 +235,7 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
     rowGap: spacing.lg,
   },
+  cell: { width: '25%' },
 });
