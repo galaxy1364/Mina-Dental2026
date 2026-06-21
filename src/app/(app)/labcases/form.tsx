@@ -149,6 +149,6 @@ const styles = StyleSheet.create({
   },
   form: { gap: spacing.lg, paddingBottom: spacing.xl },
   label: { textAlign: 'right', marginBottom: spacing.sm },
-  two: { flexDirection: 'row-reverse', gap: spacing.md },
+  two: { flexDirection: 'row', gap: spacing.md },
   flex: { flex: 1 },
 });

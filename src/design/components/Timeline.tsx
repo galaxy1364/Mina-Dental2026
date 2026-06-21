@@ -48,7 +48,7 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
 const styles = StyleSheet.create({
   wrap: { gap: 0 },
   empty: { textAlign: 'right', paddingVertical: spacing.md },
-  item: { flexDirection: 'row-reverse', gap: spacing.md },
+  item: { flexDirection: 'row', gap: spacing.md },
   rail: { alignItems: 'center', width: 16 },
   dot: { width: 12, height: 12, borderRadius: radius.pill, marginTop: 4 },
   line: { flex: 1, width: 2, backgroundColor: colors.border, marginVertical: 2 },

@@ -70,11 +70,7 @@ export default function LabFormScreen() {
     <Screen>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Text variant="body" tone="primary">
-            ← انصراف
-          </Text>
-        </Pressable>
+        <Button title="انصراف ›" kind="ghost" onPress={() => router.back()} />
         <Text variant="title">{existing ? 'ویرایش لابراتوار' : 'لابراتوار جدید'}</Text>
       </View>
 
@@ -94,7 +90,7 @@ export default function LabFormScreen() {
                   onPress={() => setType(t)}
                   style={[styles.chip, activeChip && styles.chipActive]}
                 >
-                  <Text variant="caption" tone={activeChip ? 'inverse' : 'secondary'}>
+                  <Text variant="caption" tone={activeChip ? 'onPrimary' : 'secondary'}>
                     {LAB_TYPE_LABELS[t]}
                   </Text>
                 </Pressable>
@@ -129,7 +125,12 @@ export default function LabFormScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xs, marginBottom: spacing.md },
+  header: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
   guard: { padding: spacing.lg },
   form: { gap: spacing.lg, paddingBottom: spacing.xl },
   label: { textAlign: 'right', marginBottom: spacing.sm },

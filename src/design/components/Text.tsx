@@ -2,7 +2,7 @@ import { Text as RNText, type TextProps, type TextStyle } from 'react-native';
 import { colors, fonts, fontSize } from '../tokens';
 
 type Variant = 'title' | 'subtitle' | 'body' | 'caption' | 'button';
-type Tone = 'primary' | 'secondary' | 'muted' | 'inverse' | 'danger' | 'success';
+type Tone = 'primary' | 'secondary' | 'muted' | 'inverse' | 'onPrimary' | 'brand' | 'danger' | 'success';
 
 const VARIANT_STYLE: Record<Variant, TextStyle> = {
   title: { fontFamily: fonts.bold, fontSize: fontSize.xxl },
@@ -17,6 +17,8 @@ const TONE_COLOR: Record<Tone, string> = {
   secondary: colors.textSecondary,
   muted: colors.textMuted,
   inverse: colors.textInverse,
+  onPrimary: colors.onPrimary,
+  brand: colors.primaryDark,
   danger: colors.danger,
   success: colors.success,
 };

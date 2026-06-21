@@ -6,7 +6,7 @@ import { normalizePersian } from '@/lib/persian';
 
 const log = createLogger('migrations');
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /**
  * Idempotent bootstrap of the local schema. Uses CREATE TABLE IF NOT EXISTS so it
@@ -292,9 +292,202 @@ function seedClinicData(db: ReturnType<typeof getDb>): void {
   }
 }
 
+function tableExists(db: ReturnType<typeof getDb>, table: string): boolean {
+  return !!db.getFirstSync<{ name: string }>(
+    `SELECT name FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1`,
+    [table],
+  );
+}
+
+/** Individual SQL statements that make up the DDL (tables + indexes). */
+const DDL_STATEMENTS = DDL.split(';')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+/** Every table the DDL manages, in declaration order. */
+const MANAGED_TABLES = [...DDL.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map((m) => m[1]);
+
+function createTableStmt(table: string): string | undefined {
+  return DDL_STATEMENTS.find((s) => new RegExp(`CREATE TABLE IF NOT EXISTS ${table}\\b`).test(s));
+}
+
+function indexStmts(table: string): string[] {
+  return DDL_STATEMENTS.filter(
+    (s) => /CREATE\b.*\bINDEX/i.test(s) && new RegExp(`\\bON ${table}\\b`).test(s),
+  );
+}
+
+/** Parse the declared column names out of a `CREATE TABLE (...)` statement. */
+function declaredColumns(createStmt: string): string[] {
+  const body = createStmt.slice(createStmt.indexOf('(') + 1, createStmt.lastIndexOf(')'));
+  const segments: string[] = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of body) {
+    if (ch === '(') depth += 1;
+    else if (ch === ')') depth -= 1;
+    if (ch === ',' && depth === 0) {
+      segments.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  segments.push(cur);
+  const constraints = new Set(['CHECK', 'PRIMARY', 'UNIQUE', 'FOREIGN', 'CONSTRAINT']);
+  const cols: string[] = [];
+  for (const seg of segments) {
+    const token = seg.trim().split(/\s+/)[0];
+    if (token && !constraints.has(token.toUpperCase())) cols.push(token);
+  }
+  return cols;
+}
+
+/**
+ * Reconcile pre-existing tables with the current schema. `CREATE TABLE IF NOT
+ * EXISTS` never alters an existing table, so a database built by an older schema
+ * can be missing columns (e.g. `search_norm`, `start_time`). For any table that is
+ * missing one or more declared columns, rebuild it from the current DDL and copy
+ * over the rows' shared columns — so the schema is corrected without losing data.
+ * On a fresh database this is a no-op (no tables exist yet).
+ */
+function migrateTmpName(table: string): string {
+  return `${table}__migrate_old`;
+}
+
+/**
+ * Recover from a rebuild that was interrupted (process killed) after a table was
+ * renamed to its `__migrate_old` temp but before the new table was created. In
+ * that state the table is missing under its real name while its data sits in the
+ * orphan; rename the orphan back so the next reconcile pass can retry cleanly.
+ */
+function recoverInterruptedRebuilds(db: ReturnType<typeof getDb>): void {
+  for (const table of MANAGED_TABLES) {
+    const tmp = migrateTmpName(table);
+    if (!tableExists(db, table) && tableExists(db, tmp)) {
+      db.execSync(`ALTER TABLE ${tmp} RENAME TO ${table}`);
+      log.warn('Recovered orphaned table from interrupted rebuild', { table });
+    }
+  }
+}
+
+/** First unused `<table>__quarantine[_N]` name, so quarantines never collide. */
+function freeQuarantineName(db: ReturnType<typeof getDb>, table: string): string {
+  const base = `${table}__quarantine`;
+  if (!tableExists(db, base)) return base;
+  for (let n = 2; ; n += 1) {
+    const candidate = `${base}_${n}`;
+    if (!tableExists(db, candidate)) return candidate;
+  }
+}
+
+function rebuildTable(
+  db: ReturnType<typeof getDb>,
+  table: string,
+  createStmt: string,
+  common: string[],
+  missing: string[],
+): void {
+  const tmp = migrateTmpName(table);
+  // Wrap the destructive rename → create → copy → drop in a transaction. SQLite
+  // DDL is transactional, so a crash mid-rebuild rolls back and leaves the
+  // original table intact — never orphaning the user's data.
+  db.execSync('BEGIN IMMEDIATE');
+  try {
+    db.execSync(`DROP TABLE IF EXISTS ${tmp}`);
+    db.execSync(`ALTER TABLE ${table} RENAME TO ${tmp}`);
+    db.execSync(createStmt);
+    let copied = true;
+    if (common.length) {
+      const list = common.join(', ');
+      try {
+        db.runSync(`INSERT INTO ${table} (${list}) SELECT ${list} FROM ${tmp}`);
+      } catch (err) {
+        // Old rows can be incompatible with a newly-required column (e.g. a NOT
+        // NULL column that the old table never had). Such legacy rows can't be
+        // copied automatically, but we must NOT silently lose them: keep the
+        // original rows in a quarantine table so boot can proceed with a clean
+        // table while the data stays recoverable.
+        copied = false;
+        log.warn('Could not preserve rows while rebuilding table; quarantining old rows', {
+          table,
+          error: String(err),
+        });
+      }
+    }
+    if (copied) {
+      db.execSync(`DROP TABLE ${tmp}`);
+    } else {
+      // Never overwrite an existing quarantine: a prior failed rebuild may have
+      // already preserved rows there. Pick the first free `__quarantine[_N]` name
+      // so every batch of unrecoverable rows is kept.
+      const quarantine = freeQuarantineName(db, table);
+      db.execSync(`ALTER TABLE ${tmp} RENAME TO ${quarantine}`);
+      log.warn('Legacy rows preserved for recovery', { table, quarantine });
+    }
+    for (const idx of indexStmts(table)) db.execSync(idx);
+    db.execSync('COMMIT');
+    log.info('Rebuilt drifted table', { table, missing });
+  } catch (err) {
+    db.execSync('ROLLBACK');
+    throw err;
+  }
+}
+
+function reconcileSchema(db: ReturnType<typeof getDb>): void {
+  recoverInterruptedRebuilds(db);
+  for (const table of MANAGED_TABLES) {
+    if (!tableExists(db, table)) continue;
+    const createStmt = createTableStmt(table);
+    if (!createStmt) continue;
+    const expected = declaredColumns(createStmt);
+    const actual = new Set(
+      db.getAllSync<{ name: string }>(`PRAGMA table_info(${table})`).map((c) => c.name),
+    );
+    const missing = expected.filter((c) => !actual.has(c));
+    if (missing.length === 0) continue;
+
+    const common = expected.filter((c) => actual.has(c));
+    rebuildTable(db, table, createStmt, common, missing);
+  }
+}
+
+/** Source columns that compose each table's normalized search string. */
+const SEARCH_NORM_SOURCES: { table: string; columns: string[] }[] = [
+  { table: 'patients_local', columns: ['first_name', 'last_name', 'mobile', 'national_code'] },
+  { table: 'staff_local', columns: ['full_name'] },
+  { table: 'labs_local', columns: ['name'] },
+  { table: 'lab_cases_local', columns: ['title'] },
+  { table: 'implants_local', columns: ['brand', 'system'] },
+];
+
+/**
+ * Recompute `search_norm` (via JS `normalizePersian`) for rows where it is NULL —
+ * i.e. rows that predate the column being added — so existing records stay
+ * searchable. Idempotent: only touches rows still missing the value.
+ */
+function backfillSearchNorm(db: ReturnType<typeof getDb>): void {
+  for (const { table, columns } of SEARCH_NORM_SOURCES) {
+    if (!tableExists(db, table)) continue;
+    const rows = db.getAllSync<Record<string, string | null>>(
+      `SELECT id, ${columns.join(', ')} FROM ${table} WHERE search_norm IS NULL`,
+    );
+    for (const row of rows) {
+      const norm = normalizePersian(columns.map((c) => row[c] ?? '').join(' '));
+      db.runSync(`UPDATE ${table} SET search_norm = ? WHERE id = ?`, [norm, row.id]);
+    }
+    if (rows.length) log.info('Backfilled search_norm', { table, rows: rows.length });
+  }
+}
+
 export function runMigrations(): void {
   const db = getDb();
+  // Rebuild any pre-existing table that drifted from the current schema BEFORE the
+  // DDL runs, so the DDL's `CREATE INDEX ... ON <table>(<col>)` can't hit "no such
+  // column" on a database created by an earlier schema. No-op on a fresh DB.
+  reconcileSchema(db);
   db.execSync(DDL);
+  backfillSearchNorm(db);
   seedClinicData(db);
   db.runSync(
     `INSERT INTO local_meta (key, value, updated_at) VALUES ('schema_version', ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))

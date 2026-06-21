@@ -43,7 +43,7 @@ function Chips<T extends string>({
             onPress={() => onChange(opt)}
             style={[styles.chip, active && styles.chipActive]}
           >
-            <Text variant="caption" tone={active ? 'inverse' : 'secondary'}>
+            <Text variant="caption" tone={active ? 'onPrimary' : 'secondary'}>
               {labels[opt]}
             </Text>
           </Pressable>
@@ -124,11 +124,7 @@ export default function StaffFormScreen() {
     <Screen>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Text variant="body" tone="primary">
-            ← انصراف
-          </Text>
-        </Pressable>
+        <Button title="انصراف ›" kind="ghost" onPress={() => router.back()} />
         <Text variant="title">{existing ? 'ویرایش کارمند' : 'کارمند جدید'}</Text>
       </View>
 
@@ -200,7 +196,12 @@ export default function StaffFormScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xs, marginBottom: spacing.md },
+  header: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
   guard: { padding: spacing.lg },
   form: { gap: spacing.lg, paddingBottom: spacing.xl },
   label: { textAlign: 'right', marginBottom: spacing.sm },

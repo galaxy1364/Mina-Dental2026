@@ -3,6 +3,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { Button } from '@/design/components/Button';
 import { Card } from '@/design/components/Card';
+import { ChipBar, type ChipItem } from '@/design/components/ChipBar';
 import { Screen } from '@/design/components/Screen';
 import { EmptyState, StatusBadge } from '@/design/components/StateViews';
 import { Text } from '@/design/components/Text';
@@ -21,8 +22,17 @@ export default function StaffListScreen() {
   const isManager = session?.role === 'manager';
   const [items, setItems] = useState<Staff[]>([]);
 
+  const [role, setRole] = useState<string>('all');
+
   const reload = useCallback(() => setItems(listStaff()), []);
   useFocusEffect(useCallback(() => reload(), [reload]));
+
+  const roles = Array.from(new Set(items.map((s) => s.role)));
+  const visible = items.filter((s) => role === 'all' || s.role === role);
+  const chips: ChipItem<string>[] = [
+    { key: 'all', label: 'همه', count: items.length },
+    ...roles.map((r) => ({ key: r, label: STAFF_ROLE_LABELS[r], count: items.filter((s) => s.role === r).length })),
+  ];
 
   const confirmDelete = (s: Staff) => {
     Alert.alert('حذف کارمند', `«${s.fullName}» حذف شود؟`, [
@@ -42,11 +52,7 @@ export default function StaffListScreen() {
     <Screen>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Text variant="body" tone="primary">
-            ← بازگشت
-          </Text>
-        </Pressable>
+        <Button title="بازگشت ›" kind="ghost" onPress={() => router.back()} />
         <Text variant="title">کادر درمان و پرسنل</Text>
       </View>
 
@@ -54,11 +60,13 @@ export default function StaffListScreen() {
         <Button title="افزودن کارمند جدید" onPress={() => router.push('/(app)/staff/form')} />
       ) : null}
 
+      <ChipBar items={chips} value={role} onChange={setRole} />
+
       <ScrollView contentContainerStyle={styles.list}>
-        {items.length === 0 ? (
+        {visible.length === 0 ? (
           <EmptyState message="هنوز کارمندی ثبت نشده است." />
         ) : (
-          items.map((s) => (
+          visible.map((s) => (
             <Card key={s.id}>
               <View style={styles.rowBetween}>
                 <Text variant="subtitle">{s.fullName}</Text>
@@ -97,7 +105,12 @@ export default function StaffListScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xs, marginBottom: spacing.md },
+  header: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
   list: { gap: spacing.md, paddingBottom: spacing.xl },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   badgeRow: { flexDirection: 'row', marginTop: spacing.sm },

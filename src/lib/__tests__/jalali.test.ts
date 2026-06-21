@@ -1,5 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  addJalaliMonths,
+  buildJalaliMonth,
   formatJalali,
   isoToJalaliDate,
   jalaliWeekday,
@@ -41,5 +43,64 @@ describe('jalali parsing', () => {
     expect(parseJalaliToIso('not-a-date')).toBeNull();
     expect(parseJalaliToIso('1403-01-01')).toBeNull();
     expect(parseJalaliToIso('1403/01/01', 'bad')).toBeNull();
+  });
+});
+
+describe('jalali month grid', () => {
+  it('builds a rectangular 42-cell matrix', () => {
+    const m = buildJalaliMonth(new Date('2024-03-20T10:00:00Z'));
+    expect(m.cells).toHaveLength(42);
+  });
+
+  it('starts Farvardin 1403 (a 31-day month) on Saturday (column 0)', () => {
+    // 1403/01/01 (Nowruz) falls on a Wednesday → column 4 (Sat-first week).
+    const m = buildJalaliMonth(new Date('2024-03-20T10:00:00Z'));
+    const firstReal = m.cells.findIndex((c) => c.day === 1);
+    expect(firstReal).toBe(4);
+    const days = m.cells.filter((c) => c.day !== null).length;
+    expect(days).toBe(31);
+  });
+
+  it('maps each cell to the correct Gregorian date', () => {
+    // Farvardin 1403: day 1 == 2024-03-20, day 12 == 2024-03-31, day 13 == 2024-04-01.
+    const m = buildJalaliMonth(new Date('2024-03-20T10:00:00Z'));
+    const cell = (day: number) => m.cells.find((c) => c.day === day);
+    expect(isoToJalaliDate((cell(1)?.date as Date).toISOString())).toBe('1403/01/01');
+    expect(isoToJalaliDate((cell(12)?.date as Date).toISOString())).toBe('1403/01/12');
+    expect(isoToJalaliDate((cell(31)?.date as Date).toISOString())).toBe('1403/01/31');
+  });
+
+  it('moves to the previous/next Jalali month', () => {
+    const ref = new Date('2024-03-20T10:00:00Z'); // 1403/01
+    const prev = buildJalaliMonth(addJalaliMonths(ref, -1));
+    const next = buildJalaliMonth(addJalaliMonths(ref, 1));
+    expect(prev.monthName).not.toBe(next.monthName);
+  });
+
+  it('exposes the Jalali year/month and Persian month name', () => {
+    const m = buildJalaliMonth(new Date('2024-03-20T10:00:00Z'));
+    expect(m.jy).toBe(1403);
+    expect(m.jm).toBe(1);
+    expect(m.monthName).toBe('فروردین');
+  });
+
+  it('crosses the year boundary correctly (Esfand → Farvardin)', () => {
+    // 1402/12 has 29 days; stepping +1 month lands in 1403/01.
+    const esfand = new Date('2024-03-01T10:00:00Z'); // ~1402/12/11
+    const m0 = buildJalaliMonth(esfand);
+    expect(m0.jy).toBe(1402);
+    expect(m0.jm).toBe(12);
+    const m1 = buildJalaliMonth(addJalaliMonths(esfand, 1));
+    expect(m1.jy).toBe(1403);
+    expect(m1.jm).toBe(1);
+  });
+
+  it('marks Nowruz (1/1) and the Friday weekly holiday with names', () => {
+    const m = buildJalaliMonth(new Date('2024-03-20T10:00:00Z'));
+    const nowruz = m.cells.find((c) => c.day === 1);
+    expect(nowruz?.holiday).toBe(true);
+    expect(nowruz?.holidayName).toBe('نوروز');
+    const friday = m.cells.find((c) => c.date?.getDay() === 5 && c.holidayName === 'جمعه');
+    expect(friday).toBeDefined();
   });
 });

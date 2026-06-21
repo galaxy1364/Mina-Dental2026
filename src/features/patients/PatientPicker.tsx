@@ -71,7 +71,7 @@ export function PatientPicker({ value, onChange }: Props) {
 const styles = StyleSheet.create({
   label: { textAlign: 'right' },
   selected: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   },
   results: { marginTop: spacing.sm, gap: spacing.xs },
   result: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,

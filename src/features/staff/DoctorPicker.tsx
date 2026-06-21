@@ -30,7 +30,7 @@ export function DoctorPicker({ value, onChange, label = 'پزشک' }: Props) {
 function Chip({ active, onPress, text }: { active: boolean; onPress: () => void; text: string }) {
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
-      <Text variant="caption" tone={active ? 'inverse' : 'secondary'}>
+      <Text variant="caption" tone={active ? 'onPrimary' : 'secondary'}>
         {text}
       </Text>
     </Pressable>
@@ -39,7 +39,7 @@ function Chip({ active, onPress, text }: { active: boolean; onPress: () => void;
 
 const styles = StyleSheet.create({
   label: { textAlign: 'right', marginBottom: spacing.sm },
-  chips: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: spacing.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
