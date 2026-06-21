@@ -4,35 +4,40 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Logo } from '@/design/components/Logo';
 import { Screen } from '@/design/components/Screen';
-import { IconTile } from '@/design/components/IconTile';
 import { Text } from '@/design/components/Text';
 import { Icon } from '@/design/icons/Icon';
-import { colors, gradients, radius, shadow, spacing, tile } from '@/design/tokens';
+import { colors, gradients, radius, shadow, spacing } from '@/design/tokens';
+import { withAlpha } from '@/lib/color';
 import { getSyncSnapshot } from '@/core/sync/syncEngine';
-import { computeClinicDashboard, type ClinicDashboard } from '@/features/journey/engine';
+import { computeDashboardData, type DashboardData } from '@/features/dashboard/data';
+import {
+  loadLayout,
+  moveDown,
+  moveUp,
+  resetLayout,
+  saveLayout,
+  setVisible,
+  widgetMeta,
+  type DashboardLayout,
+} from '@/features/dashboard/layout';
+import { renderWidget } from '@/features/dashboard/widgets';
 import { useAuth } from '@/features/auth/useAuth';
-import { FadeInUp, useCountUp } from '@/design/motion';
+import { useCountUp } from '@/design/motion';
 import { formatJalaliLong, nowIso } from '@/lib/jalali';
 import { formatToman, toPersianDigits } from '@/lib/persian';
-
-interface QuickLink {
-  label: string;
-  icon: Parameters<typeof IconTile>[0]['icon'];
-  color: string;
-  route: string;
-  badge?: () => string | undefined;
-}
 
 export default function Dashboard() {
   const router = useRouter();
   const { session } = useAuth();
-  const [stats, setStats] = useState<ClinicDashboard>(() => computeClinicDashboard());
+  const [data, setData] = useState<DashboardData>(() => computeDashboardData());
   const [online, setOnline] = useState<boolean>(() => getSyncSnapshot().online);
   const [pending, setPending] = useState<number>(() => getSyncSnapshot().pending);
   const [now] = useState(() => nowIso());
+  const [layout, setLayout] = useState<DashboardLayout>(() => loadLayout());
+  const [editing, setEditing] = useState(false);
 
   const refresh = useCallback(() => {
-    setStats(computeClinicDashboard());
+    setData(computeDashboardData());
     const snap = getSyncSnapshot();
     setOnline(snap.online);
     setPending(snap.pending);
@@ -40,26 +45,21 @@ export default function Dashboard() {
 
   useFocusEffect(refresh);
   useEffect(() => {
+    if (editing) return;
     const id = setInterval(refresh, 5000);
     return () => clearInterval(id);
-  }, [refresh]);
+  }, [refresh, editing]);
 
-  const links: QuickLink[] = [
-    { label: 'بیماران', icon: 'tooth', color: tile.patients, route: '/(app)/patients' },
-    { label: 'نوبت‌دهی', icon: 'appointment', color: tile.appointments, route: '/(app)/appointments' },
-    { label: 'تقویم', icon: 'calendar', color: tile.calendar, route: '/(app)/calendar' },
-    {
-      label: 'لابراتوار',
-      icon: 'flask',
-      color: tile.labcases,
-      route: '/(app)/labcases',
-      badge: () => (stats.overdueLabCases > 0 ? toPersianDigits(stats.overdueLabCases) : undefined),
-    },
-    { label: 'ایمپلنت', icon: 'implant', color: tile.implants, route: '/(app)/implants' },
-    { label: 'مالی', icon: 'wallet', color: tile.finance, route: '/(app)/payments' },
-    { label: 'کادر درمان', icon: 'users', color: tile.staff, route: '/(app)/staff' },
-    { label: 'خدمات', icon: 'grid', color: tile.reports, route: '/(app)/more' },
-  ];
+  const apply = useCallback((next: DashboardLayout) => {
+    setLayout(next);
+    saveLayout(next);
+  }, []);
+
+  const visible = layout.filter((c) => c.visible);
+  const hidden = layout.filter((c) => !c.visible);
+
+  const onUp = (id: string) => apply(moveUp(layout, layout.findIndex((c) => c.id === id)));
+  const onDown = (id: string) => apply(moveDown(layout, layout.findIndex((c) => c.id === id)));
 
   return (
     <Screen edges={['top']} padded={false}>
@@ -73,8 +73,14 @@ export default function Dashboard() {
                 {online ? 'آنلاین' : 'آفلاین'}
               </Text>
             </View>
-            <Pressable style={styles.bell} onPress={() => router.push('/(app)/more')}>
-              <Icon name="bell" size={20} color={colors.textSecondary} />
+            <Pressable
+              style={[styles.iconBtn, editing && styles.iconBtnActive]}
+              onPress={() => setEditing((e) => !e)}
+            >
+              <Icon name={editing ? 'check' : 'sliders'} size={18} color={editing ? colors.onPrimary : colors.textSecondary} />
+            </Pressable>
+            <Pressable style={styles.iconBtn} onPress={() => router.push('/(app)/more')}>
+              <Icon name="bell" size={18} color={colors.textSecondary} />
               {pending > 0 ? <View style={styles.bellDot} /> : null}
             </Pressable>
           </View>
@@ -84,51 +90,90 @@ export default function Dashboard() {
           <Text variant="caption" style={styles.heroLabel}>
             مانده مطالبات کلینیک
           </Text>
-          <HeroBalance value={stats.outstanding} />
+          <HeroBalance value={data.stats.outstanding} />
           <Text variant="caption" style={styles.heroDate}>
             {formatJalaliLong(now)}
           </Text>
 
           <View style={styles.heroStats}>
-            <HeroStat label="نوبت امروز" value={stats.todayAppointments} />
+            <HeroStat label="نوبت امروز" value={data.stats.todayAppointments} />
             <View style={styles.heroDivider} />
-            <HeroStat label="بیماران" value={stats.patients} />
+            <HeroStat label="بیماران" value={data.stats.patients} />
             <View style={styles.heroDivider} />
-            <HeroStat label="سفارش باز" value={stats.openLabCases} />
+            <HeroStat label="سفارش باز" value={data.stats.openLabCases} />
           </View>
         </LinearGradient>
 
-        <Pressable style={styles.welcome} onPress={() => router.push('/(app)/more')}>
-          <View>
-            <Text variant="body" tone="secondary">
-              خوش آمدید
+        {editing ? (
+          <View style={styles.editBanner}>
+            <Icon name="sliders" size={16} color={colors.primaryDark} />
+            <Text variant="caption" tone="secondary" style={styles.editBannerText}>
+              حالت شخصی‌سازی: جابه‌جا، مخفی یا اضافه کنید
             </Text>
-            <Text variant="subtitle">{session?.displayName ?? session?.email ?? 'کاربر'}</Text>
+            <Pressable onPress={() => apply(resetLayout())}>
+              <Text variant="caption" tone="primary">
+                بازنشانی
+              </Text>
+            </Pressable>
           </View>
-          <View style={styles.roleChip}>
-            <Text variant="caption" style={{ color: colors.primaryDark }}>
-              {roleLabel(session?.role)}
-            </Text>
-          </View>
-        </Pressable>
+        ) : null}
 
-        <Text variant="subtitle" style={styles.sectionTitle}>
-          دسترسی سریع
-        </Text>
-        <View style={styles.grid}>
-          {links.map((l, i) => (
-            <FadeInUp key={l.label} index={i} style={styles.cell}>
-              <IconTile
-                label={l.label}
-                icon={l.icon}
-                color={l.color}
-                size={58}
-                badge={l.badge?.()}
-                onPress={() => router.push(l.route as never)}
-              />
-            </FadeInUp>
-          ))}
-        </View>
+        {visible.map((cfg, i) => (
+          <View key={cfg.id}>
+            {editing ? (
+              <View style={styles.editBar}>
+                <View style={styles.editBarStart}>
+                  <Icon name={widgetMeta(cfg.id).icon} size={15} color={colors.primaryDark} />
+                  <Text variant="caption" tone="secondary">
+                    {widgetMeta(cfg.id).title}
+                  </Text>
+                </View>
+                <View style={styles.editBarActions}>
+                  <Pressable style={styles.editAction} disabled={i === 0} onPress={() => onUp(cfg.id)}>
+                    <Icon name="chevronU" size={16} color={i === 0 ? colors.textMuted : colors.textSecondary} />
+                  </Pressable>
+                  <Pressable
+                    style={styles.editAction}
+                    disabled={i === visible.length - 1}
+                    onPress={() => onDown(cfg.id)}
+                  >
+                    <Icon name="chevronD" size={16} color={i === visible.length - 1 ? colors.textMuted : colors.textSecondary} />
+                  </Pressable>
+                  <Pressable style={styles.editAction} onPress={() => apply(setVisible(layout, cfg.id, false))}>
+                    <Icon name="eyeOff" size={16} color={colors.danger} />
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
+            <View pointerEvents={editing ? 'none' : 'auto'} style={editing ? styles.widgetEditing : undefined}>
+              {renderWidget(cfg.id, data, session)}
+            </View>
+          </View>
+        ))}
+
+        {editing && hidden.length > 0 ? (
+          <View style={styles.addPanel}>
+            <Text variant="subtitle" style={styles.addTitle}>
+              افزودن ویجت
+            </Text>
+            {hidden.map((cfg) => (
+              <Pressable key={cfg.id} style={styles.addRow} onPress={() => apply(setVisible(layout, cfg.id, true))}>
+                <View style={styles.addRowStart}>
+                  <View style={styles.addIcon}>
+                    <Icon name={widgetMeta(cfg.id).icon} size={16} color={colors.primaryDark} />
+                  </View>
+                  <View style={styles.addTexts}>
+                    <Text variant="body">{widgetMeta(cfg.id).title}</Text>
+                    <Text variant="caption" tone="muted">
+                      {widgetMeta(cfg.id).description}
+                    </Text>
+                  </View>
+                </View>
+                <Icon name="plus" size={18} color={colors.primaryDark} />
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
     </Screen>
   );
@@ -157,21 +202,6 @@ function HeroStat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function roleLabel(role?: string | null): string {
-  switch (role) {
-    case 'manager':
-      return 'مدیر';
-    case 'doctor':
-      return 'پزشک';
-    case 'secretary':
-      return 'منشی';
-    case 'assistant':
-      return 'دستیار';
-    default:
-      return 'کاربر';
-  }
-}
-
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -184,11 +214,22 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: radius.pill,
   },
-  bell: { padding: spacing.sm, position: 'relative' },
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    position: 'relative',
+  },
+  iconBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   bellDot: {
     position: 'absolute',
-    top: 6,
-    right: 6,
+    top: 7,
+    right: 7,
     width: 8,
     height: 8,
     borderRadius: 4,
@@ -216,26 +257,61 @@ const styles = StyleSheet.create({
   heroStatValue: { color: colors.textInverse },
   heroStatLabel: { color: 'rgba(255,255,255,0.8)' },
   heroDivider: { width: StyleSheet.hairlineWidth, height: 28, backgroundColor: 'rgba(255,255,255,0.35)' },
-  welcome: {
+
+  editBanner: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    gap: spacing.sm,
+    backgroundColor: withAlpha(colors.primary, 0.12),
     borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: withAlpha(colors.primary, 0.3),
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  editBannerText: { flex: 1 },
+  editBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surfaceAlt,
+    borderTopLeftRadius: radius.md,
+    borderTopRightRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: -spacing.sm,
+  },
+  editBarStart: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  editBarActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  editAction: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  widgetEditing: { opacity: 0.6 },
+
+  addPanel: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: spacing.lg,
+    gap: spacing.md,
     ...shadow.card,
   },
-  roleChip: {
+  addTitle: { marginBottom: spacing.xs },
+  addRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  addRowStart: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },
+  addIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.primaryLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.pill,
   },
-  sectionTitle: { marginTop: spacing.xs },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    rowGap: spacing.lg,
-  },
-  cell: { width: '25%' },
+  addTexts: { flex: 1, gap: 2 },
 });

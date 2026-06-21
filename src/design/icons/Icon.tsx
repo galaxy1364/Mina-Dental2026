@@ -26,7 +26,14 @@ export type IconName =
   | 'search'
   | 'chevronL'
   | 'chevronR'
-  | 'cloud';
+  | 'chevronU'
+  | 'chevronD'
+  | 'cloud'
+  | 'check'
+  | 'close'
+  | 'eyeOff'
+  | 'sliders'
+  | 'alert';
 
 interface IconProps {
   name: IconName;
@@ -212,6 +219,46 @@ function glyph(name: IconName, s: object, color: string) {
       return <Polyline points="14 6 8 12 14 18" {...s} />;
     case 'chevronR':
       return <Polyline points="10 6 16 12 10 18" {...s} />;
+    case 'chevronU':
+      return <Polyline points="6 14 12 8 18 14" {...s} />;
+    case 'chevronD':
+      return <Polyline points="6 10 12 16 18 10" {...s} />;
+    case 'check':
+      return <Polyline points="5 12.5 10 17.5 19 7" {...s} />;
+    case 'close':
+      return (
+        <>
+          <Line x1="6" y1="6" x2="18" y2="18" {...s} />
+          <Line x1="18" y1="6" x2="6" y2="18" {...s} />
+        </>
+      );
+    case 'eyeOff':
+      return (
+        <>
+          <Path d="M4 12s3-6 8-6c1.6 0 3 .6 4.2 1.4M20 12s-3 6-8 6c-1.6 0-3-.6-4.2-1.4" {...s} />
+          <Circle cx="12" cy="12" r="2.6" {...s} />
+          <Line x1="4" y1="4" x2="20" y2="20" {...s} />
+        </>
+      );
+    case 'sliders':
+      return (
+        <>
+          <Line x1="5" y1="7" x2="19" y2="7" {...s} />
+          <Line x1="5" y1="12" x2="19" y2="12" {...s} />
+          <Line x1="5" y1="17" x2="19" y2="17" {...s} />
+          <Circle cx="9" cy="7" r="2" fill={color} stroke="none" />
+          <Circle cx="15" cy="12" r="2" fill={color} stroke="none" />
+          <Circle cx="8" cy="17" r="2" fill={color} stroke="none" />
+        </>
+      );
+    case 'alert':
+      return (
+        <>
+          <Path d="M12 4 21 19H3L12 4Z" {...s} />
+          <Line x1="12" y1="10" x2="12" y2="14" {...s} />
+          <Circle cx="12" cy="16.5" r="0.6" fill={color} stroke="none" />
+        </>
+      );
     case 'cloud':
       return (
         <Path
