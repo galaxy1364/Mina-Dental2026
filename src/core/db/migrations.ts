@@ -371,6 +371,16 @@ function recoverInterruptedRebuilds(db: ReturnType<typeof getDb>): void {
   }
 }
 
+/** First unused `<table>__quarantine[_N]` name, so quarantines never collide. */
+function freeQuarantineName(db: ReturnType<typeof getDb>, table: string): string {
+  const base = `${table}__quarantine`;
+  if (!tableExists(db, base)) return base;
+  for (let n = 2; ; n += 1) {
+    const candidate = `${base}_${n}`;
+    if (!tableExists(db, candidate)) return candidate;
+  }
+}
+
 function rebuildTable(
   db: ReturnType<typeof getDb>,
   table: string,
@@ -408,8 +418,10 @@ function rebuildTable(
     if (copied) {
       db.execSync(`DROP TABLE ${tmp}`);
     } else {
-      const quarantine = `${table}__quarantine`;
-      db.execSync(`DROP TABLE IF EXISTS ${quarantine}`);
+      // Never overwrite an existing quarantine: a prior failed rebuild may have
+      // already preserved rows there. Pick the first free `__quarantine[_N]` name
+      // so every batch of unrecoverable rows is kept.
+      const quarantine = freeQuarantineName(db, table);
       db.execSync(`ALTER TABLE ${tmp} RENAME TO ${quarantine}`);
       log.warn('Legacy rows preserved for recovery', { table, quarantine });
     }
