@@ -6,10 +6,13 @@ import { Screen } from '@/design/components/Screen';
 import { EmptyState } from '@/design/components/StateViews';
 import { Text } from '@/design/components/Text';
 import { Icon } from '@/design/icons/Icon';
+import { FadeInUp } from '@/design/motion';
 import { colors, fonts, radius, shadow, spacing } from '@/design/tokens';
+import { withAlpha } from '@/lib/color';
 import {
   addJalaliMonths,
   buildJalaliMonth,
+  formatJalaliLong,
   JALALI_WEEKDAY_SHORT,
 } from '@/lib/jalali';
 import { toPersianDigits } from '@/lib/persian';
@@ -70,114 +73,154 @@ export default function CalendarScreen() {
     (e) => filter === 'all' || e.category === filter,
   );
 
-  const selectedHoliday = month.cells.find(
-    (c) => c.date && dayKey(c.date) === selectedKey,
-  )?.holidayName;
+  const selectedCell = month.cells.find((c) => c.date && dayKey(c.date) === selectedKey);
+  const selectedHoliday = selectedCell?.holidayName;
+
+  const goToday = () => {
+    const today = new Date();
+    setCursor(today);
+    setSelectedKey(dayKey(today));
+  };
 
   return (
     <Screen edges={['top']} padded={false}>
-      <View style={styles.headerBar}>
-        <Pressable style={styles.navBtn} onPress={() => setCursor((c) => addJalaliMonths(c, -1))}>
-          <Icon name="chevronR" size={22} color={colors.textSecondary} />
-        </Pressable>
-        <View style={styles.monthLabel}>
-          <Text variant="subtitle">{month.monthName}</Text>
-          <Text variant="caption" tone="muted">
-            {month.year}
+      <View style={styles.topBar}>
+        <Text variant="title">تقویم</Text>
+        <Pressable style={styles.todayBtn} onPress={goToday}>
+          <Icon name="calendar" size={15} color={colors.primaryDark} />
+          <Text variant="caption" style={{ color: colors.primaryDark }}>
+            امروز
           </Text>
-        </View>
-        <Pressable style={styles.navBtn} onPress={() => setCursor((c) => addJalaliMonths(c, 1))}>
-          <Icon name="chevronL" size={22} color={colors.textSecondary} />
         </Pressable>
       </View>
 
       <ChipBar items={FILTERS} value={filter} onChange={setFilter} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.weekRow}>
-          {JALALI_WEEKDAY_SHORT.map((w, i) => (
-            <View key={w} style={styles.weekCell}>
-              <Text variant="caption" style={[styles.weekText, i === 6 && styles.holidayText]}>
-                {w}
+        <View style={styles.calCard}>
+          <View style={styles.monthRow}>
+            <Pressable style={styles.navBtn} onPress={() => setCursor((c) => addJalaliMonths(c, -1))}>
+              <Icon name="chevronR" size={20} color={colors.textSecondary} />
+            </Pressable>
+            <View style={styles.monthLabel}>
+              <Text variant="subtitle">{month.monthName}</Text>
+              <Text variant="caption" tone="muted">
+                {toPersianDigits(month.year)}
               </Text>
             </View>
-          ))}
-        </View>
-
-        <View style={styles.grid}>
-          {month.cells.map((cell, idx) => {
-            if (!cell.date || cell.day === null) {
-              return <View key={`b-${idx}`} style={styles.cell} />;
-            }
-            const k = dayKey(cell.date);
-            const dayEvents = (buckets.get(k) ?? []).filter(
-              (e) => filter === 'all' || e.category === filter,
-            );
-            const cats = Array.from(new Set(dayEvents.map((e) => e.category)));
-            const isToday = k === todayKey;
-            const isSelected = k === selectedKey;
-            return (
-              <Pressable key={k} style={styles.cell} onPress={() => setSelectedKey(k)}>
-                <View style={[styles.dayInner, isSelected && styles.daySelected, isToday && !isSelected && styles.dayToday]}>
-                  <Text
-                    variant="body"
-                    style={[
-                      styles.dayNum,
-                      cell.holiday && styles.holidayText,
-                      isSelected && styles.daySelectedText,
-                    ]}
-                  >
-                    {toPersianDigits(cell.day)}
-                  </Text>
-                  <View style={styles.dots}>
-                    {cats.map((c) => (
-                      <View key={c} style={[styles.dot, { backgroundColor: isSelected ? colors.onPrimary : CAT_COLOR[c] }]} />
-                    ))}
-                  </View>
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <View style={styles.legend}>
-          <LegendItem color={CAT_COLOR.appointment} label="نوبت" />
-          <LegendItem color={CAT_COLOR.labcase} label="لابراتوار" />
-          <LegendItem color={CAT_COLOR.payment} label="پرداخت" />
-          <LegendItem color={colors.danger} label="تعطیل" />
-        </View>
-
-        {selectedHoliday && (
-          <View style={styles.holidayBanner}>
-            <View style={[styles.dot, { backgroundColor: colors.danger }]} />
-            <Text variant="caption" style={styles.holidayBannerText}>
-              {selectedHoliday === 'جمعه' ? 'تعطیل رسمی (جمعه)' : `تعطیل رسمی: ${selectedHoliday}`}
-            </Text>
+            <Pressable style={styles.navBtn} onPress={() => setCursor((c) => addJalaliMonths(c, 1))}>
+              <Icon name="chevronL" size={20} color={colors.textSecondary} />
+            </Pressable>
           </View>
-        )}
 
-        <Text variant="subtitle" style={styles.detailTitle}>
-          رویدادهای روز
-        </Text>
+          <View style={styles.weekRow}>
+            {JALALI_WEEKDAY_SHORT.map((w, i) => (
+              <View key={w} style={styles.weekCell}>
+                <Text variant="caption" style={[styles.weekText, i === 6 && styles.holidayText]}>
+                  {w}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          <FadeInUp key={`${month.year}-${month.monthName}`}>
+            <View style={styles.grid}>
+              {month.cells.map((cell, idx) => {
+                if (!cell.date || cell.day === null) {
+                  return <View key={`b-${idx}`} style={styles.cell} />;
+                }
+                const k = dayKey(cell.date);
+                const dayEvents = (buckets.get(k) ?? []).filter(
+                  (e) => filter === 'all' || e.category === filter,
+                );
+                const cats = Array.from(new Set(dayEvents.map((e) => e.category)));
+                const isToday = k === todayKey;
+                const isSelected = k === selectedKey;
+                return (
+                  <Pressable key={k} style={styles.cell} onPress={() => setSelectedKey(k)}>
+                    <View
+                      style={[
+                        styles.dayInner,
+                        isToday && !isSelected && styles.dayToday,
+                        isSelected && styles.daySelected,
+                      ]}
+                    >
+                      <Text
+                        variant="body"
+                        style={[
+                          styles.dayNum,
+                          cell.holiday && styles.holidayText,
+                          isToday && !isSelected && styles.dayTodayText,
+                          isSelected && styles.daySelectedText,
+                        ]}
+                      >
+                        {toPersianDigits(cell.day)}
+                      </Text>
+                      <View style={styles.dots}>
+                        {cats.map((c) => (
+                          <View
+                            key={c}
+                            style={[styles.dot, { backgroundColor: isSelected ? colors.onPrimary : CAT_COLOR[c] }]}
+                          />
+                        ))}
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </FadeInUp>
+
+          <View style={styles.legend}>
+            <LegendItem color={CAT_COLOR.appointment} label="نوبت" />
+            <LegendItem color={CAT_COLOR.labcase} label="لابراتوار" />
+            <LegendItem color={CAT_COLOR.payment} label="پرداخت" />
+            <LegendItem color={colors.danger} label="تعطیل" />
+          </View>
+        </View>
+
+        <View style={styles.agendaHead}>
+          <View style={styles.agendaTitleWrap}>
+            <Text variant="subtitle">
+              {selectedCell?.date ? formatJalaliLong(selectedCell.date) : 'رویدادهای روز'}
+            </Text>
+            {selectedHoliday ? (
+              <View style={styles.holidayChip}>
+                <Text variant="caption" style={styles.holidayChipText}>
+                  {selectedHoliday === 'جمعه' ? 'تعطیل رسمی' : selectedHoliday}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          {selectedEvents.length > 0 ? (
+            <Text variant="caption" tone="muted">
+              {toPersianDigits(selectedEvents.length)} رویداد
+            </Text>
+          ) : null}
+        </View>
+
         {selectedEvents.length === 0 ? (
           <EmptyState message="برای این روز رویدادی ثبت نشده است." />
         ) : (
           <View style={styles.eventList}>
-            {selectedEvents.map((e) => (
-              <Pressable
-                key={e.id}
-                style={styles.eventRow}
-                onPress={() => router.push(`/(app)/patients/${e.patientId}` as never)}
-              >
-                <View style={[styles.eventBar, { backgroundColor: CAT_COLOR[e.category] }]} />
-                <View style={styles.eventBody}>
-                  <Text variant="body">{e.title}</Text>
-                  <Text variant="caption" tone="muted">
-                    {e.subtitle}
-                  </Text>
-                </View>
-                <Icon name="chevronL" size={18} color={colors.textMuted} />
-              </Pressable>
+            {selectedEvents.map((e, i) => (
+              <FadeInUp key={e.id} index={i}>
+                <Pressable
+                  style={styles.eventRow}
+                  onPress={() => router.push(`/(app)/patients/${e.patientId}` as never)}
+                >
+                  <View style={[styles.eventIcon, { backgroundColor: withAlpha(CAT_COLOR[e.category], 0.16) }]}>
+                    <Icon name={CAT_ICON[e.category]} size={16} color={CAT_COLOR[e.category]} />
+                  </View>
+                  <View style={styles.eventBody}>
+                    <Text variant="body">{e.title}</Text>
+                    <Text variant="caption" tone="muted">
+                      {e.subtitle}
+                    </Text>
+                  </View>
+                  <Icon name="chevronL" size={18} color={colors.textMuted} />
+                </Pressable>
+              </FadeInUp>
             ))}
           </View>
         )}
@@ -185,6 +228,12 @@ export default function CalendarScreen() {
     </Screen>
   );
 }
+
+const CAT_ICON: Record<CalendarCategory, 'appointment' | 'flask' | 'wallet'> = {
+  appointment: 'appointment',
+  labcase: 'flask',
+  payment: 'wallet',
+};
 
 function LegendItem({ color, label }: { color: string; label: string }) {
   return (
@@ -198,17 +247,45 @@ function LegendItem({ color, label }: { color: string; label: string }) {
 }
 
 const styles = StyleSheet.create({
-  headerBar: {
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
-  navBtn: { padding: spacing.sm },
+  todayBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+  },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.lg },
+
+  calCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.sm,
+    ...shadow.card,
+  },
+  monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  navBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceAlt,
+  },
   monthLabel: { alignItems: 'center' },
-  content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
-  weekRow: { flexDirection: 'row', marginTop: spacing.sm },
+  weekRow: { flexDirection: 'row', marginTop: spacing.xs },
   weekCell: { flex: 1, alignItems: 'center' },
   weekText: { fontFamily: fonts.medium, color: colors.textMuted },
   holidayText: { color: colors.danger },
@@ -221,10 +298,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 3,
   },
-  daySelected: { backgroundColor: colors.primary },
-  dayToday: { backgroundColor: colors.primaryLight },
+  daySelected: { backgroundColor: colors.primary, ...shadow.glow },
+  dayToday: {
+    backgroundColor: colors.primaryLight,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
   dayNum: { color: colors.textPrimary },
-  daySelectedText: { color: colors.onPrimary },
+  dayTodayText: { color: colors.primaryDark, fontFamily: fonts.bold },
+  daySelectedText: { color: colors.onPrimary, fontFamily: fonts.bold },
   dots: { flexDirection: 'row', gap: 2, height: 6 },
   dot: { width: 6, height: 6, borderRadius: 3 },
   legend: {
@@ -232,23 +314,22 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.lg,
     justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    ...shadow.card,
+    paddingTop: spacing.sm,
+    marginTop: spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  holidayBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+
+  agendaHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  agendaTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
+  holidayChip: {
+    backgroundColor: withAlpha(colors.danger, 0.16),
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
   },
-  holidayBannerText: { color: colors.danger, fontFamily: fonts.medium },
-  detailTitle: { marginTop: spacing.sm },
+  holidayChipText: { color: colors.danger, fontFamily: fonts.medium },
   eventList: { gap: spacing.sm },
   eventRow: {
     flexDirection: 'row',
@@ -256,9 +337,17 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: spacing.md,
     ...shadow.card,
   },
-  eventBar: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
+  eventIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   eventBody: { flex: 1, gap: 2 },
 });
