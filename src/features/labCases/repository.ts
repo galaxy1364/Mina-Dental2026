@@ -2,7 +2,7 @@
  * Lab cases (سفارش لابراتوار) — offline-first work orders linking a patient to a
  * lab, with a status lifecycle that powers the patient timeline. Soft-delete only.
  */
-import { and, desc, eq, isNull, ne, or } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, lt, ne, or } from 'drizzle-orm';
 import { db } from '@/core/db/client';
 import { labCasesLocal } from '@/core/db/schema';
 import { CLINIC } from '@/core/clinic';
@@ -87,6 +87,22 @@ export function listOpenLabCases(): LabCase[] {
       ),
     )
     .orderBy(desc(labCasesLocal.createdAt))
+    .all();
+}
+
+/**
+ * Lab cases whose due date falls in [startIso, endIso). Filtered at the database
+ * level (like appointments/payments) so calendar navigation stays cheap as the
+ * lab-case table grows.
+ */
+export function listLabCasesBetween(startIso: string, endIso: string): LabCase[] {
+  return db
+    .select()
+    .from(labCasesLocal)
+    .where(
+      and(activeClinic(), gte(labCasesLocal.dueAt, startIso), lt(labCasesLocal.dueAt, endIso)),
+    )
+    .orderBy(desc(labCasesLocal.dueAt))
     .all();
 }
 

@@ -4,7 +4,7 @@
  * calendar can render colored dots and per-day detail lists.
  */
 import { listAppointmentsBetween, APPOINTMENT_STATUS_LABELS } from '@/features/appointments/repository';
-import { listLabCases } from '@/features/labCases/repository';
+import { listLabCasesBetween } from '@/features/labCases/repository';
 import { listPaymentsBetween } from '@/features/payments/repository';
 import { fullName, getPatient } from '@/features/patients/repository';
 import { formatToman } from '@/lib/persian';
@@ -34,10 +34,6 @@ function patientName(id: string): string {
   return p ? fullName(p) : 'بیمار';
 }
 
-function inRange(iso: string | null, startIso: string, endIso: string): iso is string {
-  return !!iso && iso >= startIso && iso < endIso;
-}
-
 export function listCalendarEvents(startIso: string, endIso: string): CalendarEvent[] {
   const events: CalendarEvent[] = [];
 
@@ -53,9 +49,8 @@ export function listCalendarEvents(startIso: string, endIso: string): CalendarEv
     });
   }
 
-  for (const c of listLabCases()) {
-    if (c.status === 'cancelled') continue;
-    if (!inRange(c.dueAt, startIso, endIso)) continue;
+  for (const c of listLabCasesBetween(startIso, endIso)) {
+    if (c.status === 'cancelled' || c.dueAt == null) continue;
     events.push({
       id: `lab-${c.id}`,
       category: 'labcase',
