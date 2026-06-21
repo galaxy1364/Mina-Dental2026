@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Pressable, View } from 'react-native';
 import { colors, fonts, radius, spacing } from '../tokens';
+import { withAlpha } from '@/lib/color';
 import { Text } from './Text';
 
 export interface ChipItem<T extends string> {
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeActive: { backgroundColor: 'rgba(26,29,16,0.18)' },
+  badgeActive: { backgroundColor: withAlpha(colors.onPrimary, 0.18) },
   badgeText: { fontSize: 10, lineHeight: 14, color: colors.textSecondary },
   badgeTextActive: { color: colors.onPrimary },
 });

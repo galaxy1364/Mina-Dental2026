@@ -47,11 +47,7 @@ export default function LabsListScreen() {
     <Screen>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Text variant="body" tone="primary">
-            ← بازگشت
-          </Text>
-        </Pressable>
+        <Button title="بازگشت ›" kind="ghost" onPress={() => router.back()} />
         <Text variant="title">لابراتوارها</Text>
       </View>
 
@@ -104,7 +100,12 @@ export default function LabsListScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xs, marginBottom: spacing.md },
+  header: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
   list: { gap: spacing.md, paddingBottom: spacing.xl },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   badgeRow: { flexDirection: 'row', marginTop: spacing.sm },
